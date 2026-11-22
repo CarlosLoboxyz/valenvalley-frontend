@@ -291,6 +291,9 @@ export const esVE = {
 	'status.rfqEmpty':
 		'Aún no hay proveedores consolidados para el borrador de RFQ. Valida la lista primero.',
 	'status.rawError': '{message}',
+	'error.backendUnavailable':
+		'El servicio de datos no está disponible. Verifica que el backend esté activo en BACKEND_URL.',
+	'status.usingSample': 'Mostrando datos de ejemplo: el backend no está configurado o no responde.',
 	'error.import.jsonShape':
 		'El archivo JSON no coincide con la estructura de final_recommendations.json.',
 	'error.import.noRows': 'No se encontraron filas de producto válidas en el libro de RFQ cargado.',

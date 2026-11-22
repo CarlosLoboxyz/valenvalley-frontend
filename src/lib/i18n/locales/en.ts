@@ -280,6 +280,9 @@ export const en = {
 		'RFQ draft ready: {count} consolidated suppliers. Review and approve before sending (no automatic sending).',
 	'status.rfqEmpty': 'No consolidated suppliers yet for the RFQ draft. Validate the list first.',
 	'status.rawError': '{message}',
+	'error.backendUnavailable':
+		'The data service is unavailable. Make sure the backend is running at BACKEND_URL.',
+	'status.usingSample': 'Showing sample data: backend is not configured or not responding.',
 	'error.import.jsonShape': 'The JSON file does not match the final_recommendations.json structure.',
 	'error.import.noRows': 'No valid product rows found in the uploaded RFQ workbook.',
 	'error.import.failed': 'Failed to import the file.',

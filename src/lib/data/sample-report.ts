@@ -188,9 +188,18 @@ export function createInitialSourcingReport(): SourcingReport {
 			disqualifiedCount: 0,
 			listingUrl: `https://www.alibaba.com/product-detail/${slugify(row.product)}.html`,
 			moqLabel: row.issues <= 3 ? `${Math.min(100, row.qtyNumeric)} ${row.unit}` : MOQ_UNCONFIRMED,
+			moqNumeric: row.issues <= 3 ? Math.min(100, row.qtyNumeric) : null,
 			yearsActive: row.score >= 52 ? 5 : null,
 			hasTradeAssurance: row.score >= 52,
-			certifications: row.score >= 52 ? ['ISO9001'] : []
+			certifications: row.score >= 52 ? ['ISO9001'] : [],
+			unitPriceMinUsd: parsePriceRange(row.price).min,
+			unitPriceMaxUsd: parsePriceRange(row.price).max,
+			priceTiers: null,
+			cargoVolumeM3: null,
+			unitVolumeM3: null,
+			cargoWeightKg: null,
+			includesPackaging: null,
+			isSample: true
 		};
 	});
 

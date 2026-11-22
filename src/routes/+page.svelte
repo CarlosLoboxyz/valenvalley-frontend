@@ -11,6 +11,7 @@
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import Topbar from '$lib/components/layout/Topbar.svelte';
 	import PipelineControls from '$lib/components/pipeline/PipelineControls.svelte';
+	import Alert from '$lib/components/ui/Alert.svelte';
 	import { usePreferences } from '$lib/stores/preferences.svelte';
 	import { sourcingStore } from '$lib/stores/sourcing.svelte';
 	import type { PageData } from './$types';
@@ -68,6 +69,12 @@
 				onExportJson={() => sourcingStore.exportJson()}
 				onPrint={() => window.print()}
 			/>
+
+			{#if data.reportSource === 'sample'}
+				<Alert tone={data.backendError ? 'error' : 'info'} class="source-alert">
+					{prefs.t(data.backendError ? 'error.backendUnavailable' : 'status.usingSample')}
+				</Alert>
+			{/if}
 
 			<ViewTabs
 				activeTab={sourcingStore.activeTab}
@@ -186,7 +193,7 @@
 						status={sourcingStore.statusMessage}
 						isBusy={sourcingStore.isBusy}
 						onGranularityChange={(g) => sourcingStore.setGranularity(g)}
-						onValidate={() => sourcingStore.recalculateOffline(false)}
+						onValidate={() => sourcingStore.validateList()}
 						onCompare={() => {
 							sourcingStore.setTab('overview');
 							scrollToSection('suppliers');

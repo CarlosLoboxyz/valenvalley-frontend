@@ -351,9 +351,18 @@ export function buildSourcingReport(params: {
 					topOffer.listing.moq !== null
 						? `${topOffer.listing.moq} ${topOffer.listing.moqUnit}`
 						: MOQ_UNCONFIRMED,
+				moqNumeric: topOffer.listing.moq,
 				yearsActive: topOffer.listing.yearsActive,
 				hasTradeAssurance: topOffer.listing.hasTradeAssurance,
-				certifications: topOffer.listing.certifications
+				certifications: topOffer.listing.certifications,
+				unitPriceMinUsd: topOffer.listing.priceMin,
+				unitPriceMaxUsd: topOffer.listing.priceMax,
+				priceTiers: null,
+				cargoVolumeM3: null,
+				unitVolumeM3: null,
+				cargoWeightKg: null,
+				includesPackaging: null,
+				isSample: false
 			});
 		} else {
 			recommendations.push({
@@ -391,9 +400,18 @@ export function buildSourcingReport(params: {
 				disqualifiedCount: disqualified.length,
 				listingUrl: '',
 				moqLabel: MOQ_NOT_AVAILABLE,
+				moqNumeric: null,
 				yearsActive: null,
 				hasTradeAssurance: false,
-				certifications: []
+				certifications: [],
+				unitPriceMinUsd: null,
+				unitPriceMaxUsd: null,
+				priceTiers: null,
+				cargoVolumeM3: null,
+				unitVolumeM3: null,
+				cargoWeightKg: null,
+				includesPackaging: null,
+				isSample: false
 			});
 		}
 	}
