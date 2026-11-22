@@ -34,13 +34,19 @@
 		style={onDark ? 'stroke: rgba(244, 244, 244, 0.22)' : 'stroke: var(--logo-tile-stroke, transparent)'}
 	/>
 	<path
-		d={MARK.path}
-		stroke={BRAND_COLORS.stroke}
-		stroke-width={MARK.strokeWidth}
+		d={MARK.letters}
+		stroke={BRAND_COLORS.mark}
+		stroke-width={MARK.lettersStrokeWidth}
+		stroke-linejoin="round"
+	/>
+	<path
+		d={MARK.accent}
+		stroke={BRAND_COLORS.accent}
+		stroke-width={MARK.accentStrokeWidth}
 		stroke-linecap="round"
 		stroke-linejoin="round"
 	/>
-	<circle cx={MARK.dot.cx} cy={MARK.dot.cy} r={MARK.dot.r} fill={BRAND_COLORS.dot} />
+	<circle cx={MARK.dot.cx} cy={MARK.dot.cy} r={MARK.dot.r} fill={BRAND_COLORS.accent} />
 </svg>
 
 <style>

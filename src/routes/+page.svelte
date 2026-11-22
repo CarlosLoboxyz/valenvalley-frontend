@@ -12,7 +12,8 @@
 	import Topbar from '$lib/components/layout/Topbar.svelte';
 	import PipelineControls from '$lib/components/pipeline/PipelineControls.svelte';
 	import Alert from '$lib/components/ui/Alert.svelte';
-	import { usePreferences } from '$lib/stores/preferences.svelte';
+	import { BRAND_NAME } from '$lib/brand/mark';
+import { usePreferences } from '$lib/stores/preferences.svelte';
 	import { SourcingStore } from '$lib/stores/sourcing.svelte';
 	import UnavailableScreen from '$lib/components/shell/UnavailableScreen.svelte';
 	import { untrack } from 'svelte';
@@ -64,9 +65,7 @@
 			<PageHeader
 				activeTab={store.activeTab}
 				runDate={store.report.runDate}
-				onExportExcel={() => store.exportExcel(prefs.locale)}
-				onExportJson={() => store.exportJson()}
-				onPrint={() => window.print()}
+				onExport={() => store.exportExcel(prefs.locale)}
 			/>
 
 			{#if store.noVendorCount > 0}
@@ -204,7 +203,7 @@
 			{/if}
 
 			<footer class="page-footer">
-				CuadraMás <span>·</span>
+				{BRAND_NAME} <span>·</span>
 				{prefs.t('app.footer')}
 			</footer>
 		</div>

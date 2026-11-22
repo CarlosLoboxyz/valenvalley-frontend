@@ -8,12 +8,10 @@
 	interface Props {
 		activeTab: DashboardTab;
 		runDate: string;
-		onExportExcel: () => void;
-		onExportJson: () => void;
-		onPrint: () => void;
+		onExport: () => void;
 	}
 
-	let { activeTab, runDate, onExportExcel, onExportJson, onPrint }: Props = $props();
+	let { activeTab, runDate, onExport }: Props = $props();
 
 	const { t, date } = usePreferences();
 
@@ -41,15 +39,7 @@
 	</div>
 
 	<div class="heading-actions">
-		<Button variant="secondary" onclick={onExportJson} title={t('header.json.title')}>
-			<Icon name="download" size={15} />
-			JSON
-		</Button>
-		<Button variant="secondary" onclick={onExportExcel} title={t('header.excel.title')}>
-			<Icon name="file-spreadsheet" size={15} />
-			{t('header.excel')}
-		</Button>
-		<Button onclick={onPrint}>
+		<Button onclick={onExport}>
 			<Icon name="download" size={15} />
 			{t('header.export')}
 		</Button>

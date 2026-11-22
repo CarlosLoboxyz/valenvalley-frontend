@@ -22,7 +22,7 @@ export const esVE = {
 	'common.noQualifyingSupplier': 'Sin proveedor calificado',
 
 	// ── App ──────────────────────────────────────────────────────────
-	'app.title': 'CuadraMás — Comparativa de proveedores',
+	'app.title': 'ProcuraMAX — Comparativa de proveedores',
 	'app.description':
 		'Comparativa B2B de proveedores en Alibaba con agrupado por familias, validación de listas de materiales y borradores de RFQ para aprobación humana.',
 	'app.footer':
@@ -301,7 +301,7 @@ export const esVE = {
 	'error.fetch.failed': 'La consulta falló. Verifica la API key en el archivo .env.',
 
 	// ── Acceso ───────────────────────────────────────────────────────
-	'auth.meta.title': 'Ingreso — CuadraMás',
+	'auth.meta.title': 'Ingreso — ProcuraMAX',
 	'auth.meta.description': 'Acceso a la plataforma de sourcing en Alibaba.',
 	'auth.title': 'Ingreso',
 	'auth.subtitle': 'Accede a tu plataforma de sourcing y carga tu lista de materiales.',
@@ -312,7 +312,7 @@ export const esVE = {
 	'auth.firstTime': '¿Primera vez?',
 	'auth.firstTime.link': 'Crear una cuenta',
 	'auth.passwordConfirm': 'Confirmar contraseña',
-	'auth.signup.meta.title': 'Crear cuenta — CuadraMás',
+	'auth.signup.meta.title': 'Crear cuenta — ProcuraMAX',
 	'auth.signup.meta.description': 'Registro en la plataforma de sourcing en Alibaba.',
 	'auth.signup.title': 'Crear cuenta',
 	'auth.signup.subtitle': 'Regístrate para usar la plataforma de sourcing.',
@@ -327,7 +327,7 @@ export const esVE = {
 	'auth.error.unavailable': 'El servicio de autenticación no está disponible. Inténtalo más tarde.',
 
 	// ── Ingesta de materiales ────────────────────────────────────────
-	'ingest.meta.title': 'Carga de materiales — CuadraMás',
+	'ingest.meta.title': 'Carga de materiales — ProcuraMAX',
 	'ingest.meta.description': 'Ingesta de la lista de materiales por archivo o entrada manual.',
 	'ingest.title': 'Carga de materiales',
 	'ingest.subtitle':
@@ -380,7 +380,15 @@ export const esVE = {
 	'onboarding.progress.aria': 'Progreso de la búsqueda',
 	'onboarding.progress.cancel': 'Cancelar búsqueda',
 	'onboarding.progress.counts': '{done} de {total} familias · {cache} conocidas · {live} consultadas · {credits} créditos gastados',
-	'onboarding.progress.listings': '{count} ofertas',
+	'onboarding.progress.listing.one': '{count} oferta',
+	'onboarding.progress.listing.other': '{count} ofertas',
+	'onboarding.progress.pending': 'Consultando siguiente familia…',
+	'onboarding.progress.status.cached': 'Conocida',
+	'onboarding.progress.status.scraped': 'Consultada',
+	'onboarding.progress.status.missing': 'Sin datos',
+	'onboarding.progress.status.failed': 'Falló',
+	'onboarding.progress.status.empty': 'Sin resultados',
+	'onboarding.progress.status.cancelled': 'Cancelada',
 	'onboarding.progress.logAria': 'Familias completadas',
 	'onboarding.progress.running': 'Búsqueda en curso',
 	'onboarding.progress.starting': 'Iniciando…',

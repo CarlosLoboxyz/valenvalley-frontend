@@ -1,6 +1,6 @@
 {
-	"name": "CuadraMás",
-	"short_name": "CuadraMás",
+	"name": "ProcuraMAX",
+	"short_name": "ProcuraMAX",
 	"description": "Comparativa de proveedores en Alibaba con validación de listas de materiales y borradores de RFQ.",
 	"start_url": "/",
 	"display": "standalone",

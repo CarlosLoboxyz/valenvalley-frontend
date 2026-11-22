@@ -7,14 +7,14 @@ const staticAssets = Object.keys(import.meta.glob('../../static/*', { query: '?u
 	(path) => path.split('/').pop()
 );
 
-describe('marca CuadraMás', () => {
+describe('marca ProcuraMAX', () => {
 	it('el logo usa solo los colores de la paleta oficial', () => {
 		const svg = markSvg();
 		expect(svg).toContain(BRAND_COLORS.tile);
-		expect(svg).toContain(BRAND_COLORS.stroke);
-		expect(svg).toContain(BRAND_COLORS.dot);
+		expect(svg).toContain(BRAND_COLORS.mark);
+		expect(svg).toContain(BRAND_COLORS.accent);
 		const hexes = svg.match(/#[0-9a-f]{6}/gi)?.map((hex) => hex.toLowerCase()) ?? [];
-		expect(new Set(hexes)).toEqual(new Set(['#091242', '#fe6703', '#ffd550']));
+		expect(new Set(hexes)).toEqual(new Set(['#273270', '#ffffff', '#fe6703']));
 	});
 
 	it('el ícono a sangre completa no tiene esquinas redondeadas', () => {

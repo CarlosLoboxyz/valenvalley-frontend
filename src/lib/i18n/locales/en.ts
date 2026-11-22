@@ -18,7 +18,7 @@ export const en = {
 	'common.noQualifyingSupplier': 'No qualifying supplier',
 
 	// ── App ──────────────────────────────────────────────────────────
-	'app.title': 'CuadraMás — Supplier comparison',
+	'app.title': 'ProcuraMAX — Supplier comparison',
 	'app.description':
 		'B2B supplier comparison on Alibaba with family grouping, materials list validation and RFQ drafts for human approval.',
 	'app.footer':
@@ -289,7 +289,7 @@ export const en = {
 	'error.fetch.failed': 'Request failed. Check the API key in the .env file.',
 
 	// ── Sign in ──────────────────────────────────────────────────────
-	'auth.meta.title': 'Sign in — CuadraMás',
+	'auth.meta.title': 'Sign in — ProcuraMAX',
 	'auth.meta.description': 'Access to the Alibaba sourcing platform.',
 	'auth.title': 'Sign in',
 	'auth.subtitle': 'Access your sourcing platform and upload your materials list.',
@@ -300,7 +300,7 @@ export const en = {
 	'auth.firstTime': 'First time here?',
 	'auth.firstTime.link': 'Create an account',
 	'auth.passwordConfirm': 'Confirm password',
-	'auth.signup.meta.title': 'Create account — CuadraMás',
+	'auth.signup.meta.title': 'Create account — ProcuraMAX',
 	'auth.signup.meta.description': 'Sign up for the Alibaba sourcing platform.',
 	'auth.signup.title': 'Create account',
 	'auth.signup.subtitle': 'Sign up to use the sourcing platform.',
@@ -315,7 +315,7 @@ export const en = {
 	'auth.error.unavailable': 'The authentication service is unavailable. Try again later.',
 
 	// ── Materials ingestion ──────────────────────────────────────────
-	'ingest.meta.title': 'Materials upload — CuadraMás',
+	'ingest.meta.title': 'Materials upload — ProcuraMAX',
 	'ingest.meta.description': 'Materials list ingestion by file or manual entry.',
 	'ingest.title': 'Materials upload',
 	'ingest.subtitle': 'Upload your list as .csv or .xlsx, or type it by hand to continue to quoting.',
@@ -367,7 +367,15 @@ export const en = {
 	'onboarding.progress.aria': 'Search progress',
 	'onboarding.progress.cancel': 'Cancel search',
 	'onboarding.progress.counts': '{done} of {total} families · {cache} known · {live} fetched · {credits} credits spent',
-	'onboarding.progress.listings': '{count} listings',
+	'onboarding.progress.listing.one': '{count} listing',
+	'onboarding.progress.listing.other': '{count} listings',
+	'onboarding.progress.pending': 'Fetching next family…',
+	'onboarding.progress.status.cached': 'Known',
+	'onboarding.progress.status.scraped': 'Fetched',
+	'onboarding.progress.status.missing': 'No data',
+	'onboarding.progress.status.failed': 'Failed',
+	'onboarding.progress.status.empty': 'No results',
+	'onboarding.progress.status.cancelled': 'Cancelled',
 	'onboarding.progress.logAria': 'Completed families',
 	'onboarding.progress.running': 'Search in progress',
 	'onboarding.progress.starting': 'Starting…',

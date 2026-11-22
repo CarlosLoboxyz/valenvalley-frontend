@@ -101,6 +101,14 @@
 	cursor: not-allowed;
 }
 
+/* CTA principal deshabilitado: conserva contraste legible en vez de un naranja lavado. */
+.btn--primary:disabled {
+	opacity: 1;
+	background: var(--surface-muted);
+	border-color: var(--border);
+	color: var(--muted-foreground);
+}
+
 /* ── Field / Input ──────────────────────────────────────────────────── */
 .field {
 	display: grid;
