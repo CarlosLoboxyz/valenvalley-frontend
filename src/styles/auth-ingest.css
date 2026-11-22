@@ -298,3 +298,11 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+.auth-notice {
+	margin-bottom: 18px;
+}
+
+.logout-form {
+	display: contents;
+}

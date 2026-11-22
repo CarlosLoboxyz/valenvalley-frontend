@@ -19,6 +19,28 @@ npm run build
 npm run preview
 ```
 
+## Authentication (PocketBase)
+
+All routes except `/login`, `/signup` and `/logout` require a session. Login/signup run **on the
+SvelteKit server** against PocketBase (`POCKETBASE_URL`); the PocketBase token is kept in an
+httpOnly cookie (`vv_pb_token`) and forwarded to the FastAPI backend as `Authorization: Bearer`.
+The browser never talks to PocketBase or FastAPI directly. For local development you need a
+running PocketBase (`POCKETBASE_URL`) and, to see real data, the backend (`BACKEND_URL`); the
+easiest way is the monorepo `docker-compose.yml`.
+
+## Docker
+
+`Dockerfile` builds a standalone Node server (`@sveltejs/adapter-node`, port 3000). Configuration
+is read at runtime (`$env/dynamic/private`), so nothing is baked into the image. Production
+orchestration (PocketBase + backend + TLS proxy) lives in the monorepo; this Dockerfile is for
+standalone dev/testing:
+
+```bash
+docker build -t valenvalley-front .
+docker run --rm -p 3000:3000 -e POCKETBASE_URL=http://host.docker.internal:8090 \
+  -e BACKEND_URL=http://host.docker.internal:8000 -e ORIGIN=http://localhost:3000 valenvalley-front
+```
+
 ## Architecture
 
 ### Modular Business Logic (`src/lib/modules/`)

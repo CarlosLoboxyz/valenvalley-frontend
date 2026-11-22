@@ -9,11 +9,11 @@ import type { RequestHandler } from './$types';
 /**
  * Proxy server-side para `POST /api/v1/recommendations/score` (0 créditos).
  *
- * El navegador NUNCA habla con el backend directo ni ve `BACKEND_AUTH_TOKEN`:
- * llama a esta ruta (SvelteKit) y aquí se reenvía con el token Bearer.
+ * El navegador NUNCA habla con el backend directo ni ve el token de PocketBase:
+ * llama a esta ruta (SvelteKit) y aquí se reenvía con el token Bearer del usuario en sesión.
  */
-export const POST: RequestHandler = async ({ request }) => {
-	const config = loadBackendConfig(env);
+export const POST: RequestHandler = async ({ request, locals }) => {
+	const config = loadBackendConfig(env, locals.pbToken);
 	if (!config.enabled) {
 		return json(
 			{ error: { code: 'backend_disabled', detail: 'BACKEND_URL is not configured' } },

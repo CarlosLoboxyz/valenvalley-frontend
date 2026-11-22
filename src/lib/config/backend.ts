@@ -2,10 +2,10 @@
  * Configuración del backend FastAPI (`valenvalley-alibaba`).
  *
  * El frontend llama al backend SÓLO desde el servidor (rutas `+server.ts` y `+page.server.ts`),
- * de modo que `BACKEND_AUTH_TOKEN` (Bearer de PocketBase) nunca llega al navegador.
+ * de modo que el token Bearer de PocketBase nunca llega al navegador.
  *
  * - `BACKEND_URL`      — base del API, p. ej. `http://localhost:8000` (sin `/api/v1`).
- * - `BACKEND_AUTH_TOKEN` — token Bearer de PocketBase (se cablea al integrar el login real).
+ * - El token Bearer es el de PocketBase del usuario en sesión (`locals.pbToken`), por petición.
  * - `BACKEND_TIMEOUT_MS` — timeout por llamada.
  *
  * Si `BACKEND_URL` no está definida, el backend se considera deshabilitado y la app
@@ -18,20 +18,23 @@ import type { PublicConfig } from '$lib/services/backend/types';
 export interface BackendConfig {
 	enabled: boolean;
 	baseUrl: string;
-	/** Token Bearer de PocketBase; vacío hasta integrar el login real (401 en datos). */
+	/** Token Bearer de PocketBase del usuario en sesión (vacío = el backend responde 401). */
 	authToken: string;
 	timeoutMs: number;
 }
 
 const DEFAULT_TIMEOUT_MS = 8000;
 
-export function loadBackendConfig(env: Record<string, string | undefined>): BackendConfig {
+export function loadBackendConfig(
+	env: Record<string, string | undefined>,
+	authToken: string | null = null
+): BackendConfig {
 	const rawUrl = (env.BACKEND_URL ?? '').trim();
 	const enabled = rawUrl !== '';
 	return {
 		enabled,
 		baseUrl: enabled ? rawUrl.replace(/\/+$/, '') : '',
-		authToken: (env.BACKEND_AUTH_TOKEN ?? '').trim(),
+		authToken: (authToken ?? '').trim(),
 		timeoutMs: numberFrom(env.BACKEND_TIMEOUT_MS, DEFAULT_TIMEOUT_MS)
 	};
 }

@@ -1,8 +1,17 @@
-import { redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import { loginSchema } from '$lib/schemas/auth';
-import type { Actions } from './$types';
+import { setSessionCookie, safeRedirect } from '$lib/server/session';
+import { authWithPassword, loadPocketBaseConfig, PocketBaseError } from '$lib/services/pocketbase';
+import type { Actions, PageServerLoad } from './$types';
 
-const SESSION_COOKIE = 'cuadramas_session';
+export const load: PageServerLoad = ({ locals, url }) => {
+	if (locals.user) throw redirect(303, safeRedirect(url.searchParams.get('redirectTo')));
+	return {
+		registered: url.searchParams.get('registered') === '1',
+		signupEnabled: (env.SIGNUP_ENABLED ?? 'true').toLowerCase() !== 'false'
+	};
+};
 
 export const actions: Actions = {
 	default: async ({ request, cookies, url }) => {
@@ -19,21 +28,26 @@ export const actions: Actions = {
 				const key = String(issue.path[0] ?? '');
 				if (key && !(key in fieldErrors)) fieldErrors[key] = issue.message;
 			}
-			return { type: 'error' as const, fieldErrors };
+			return fail(400, { type: 'error' as const, fieldErrors, email });
 		}
 
-		// Sesión simulada: fácil de reemplazar por autenticación real.
-		const session = {
-			email: parsed.data.email,
-			createdAt: Date.now()
-		};
-		cookies.set(SESSION_COOKIE, JSON.stringify(session), {
-			path: '/',
-			httpOnly: true,
-			sameSite: 'lax',
-			maxAge: 60 * 60 * 8 // 8 h
-		});
+		try {
+			const session = await authWithPassword(
+				loadPocketBaseConfig(env),
+				parsed.data.email,
+				parsed.data.password
+			);
+			setSessionCookie(cookies, session.token, url.protocol === 'https:');
+		} catch (err) {
+			const unavailable = !(err instanceof PocketBaseError) || err.status === 0 || err.status >= 500;
+			return fail(unavailable ? 503 : 400, {
+				type: 'error' as const,
+				fieldErrors: {},
+				formError: unavailable ? 'auth.error.unavailable' : 'auth.error.invalidCredentials',
+				email: parsed.data.email
+			});
+		}
 
-		throw redirect(303, url.searchParams.get('redirectTo') ?? '/materiales');
+		throw redirect(303, safeRedirect(url.searchParams.get('redirectTo')));
 	}
 };

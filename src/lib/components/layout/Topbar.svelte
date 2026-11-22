@@ -35,5 +35,8 @@
 			dot={cautionCount > 0}
 			onclick={onReviewFlagged}
 		/>
+		<form method="POST" action="/logout" class="logout-form">
+			<IconButton icon="log-out" tone="chrome" type="submit" label={t('auth.logout')} />
+		</form>
 	</div>
 </header>

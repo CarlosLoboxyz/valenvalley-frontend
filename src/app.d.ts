@@ -8,6 +8,10 @@ declare global {
 		interface Locals {
 			theme: Theme;
 			locale: Locale;
+			/** Usuario autenticado en PocketBase (null si no hay sesión). */
+			user: import('$lib/services/pocketbase').PocketBaseUser | null;
+			/** Token de PocketBase de la sesión; se reenvía al backend como Bearer. Nunca llega al navegador. */
+			pbToken: string | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

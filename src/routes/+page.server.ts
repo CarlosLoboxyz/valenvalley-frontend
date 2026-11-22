@@ -2,8 +2,10 @@ import { env } from '$env/dynamic/private';
 import { loadBackendConfig, pipelineConfigFromBackend } from '$lib/config/backend';
 import { loadConfigFromEnv } from '$lib/config/pipeline-config';
 import { createInitialSourcingReport } from '$lib/data/sample-report';
-import { BackendClient } from '$lib/services/backend/client';
+import { BackendClient, BackendHttpError } from '$lib/services/backend/client';
 import { adaptScoreResponse } from '$lib/services/backend/adapter';
+import { forgetToken, clearSessionCookie } from '$lib/server/session';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export type ReportSource = 'backend' | 'sample';
@@ -16,8 +18,8 @@ function sampleReport() {
 	return report;
 }
 
-export const load: PageServerLoad = async () => {
-	const backend = loadBackendConfig(env);
+export const load: PageServerLoad = async ({ locals, cookies, url }) => {
+	const backend = loadBackendConfig(env, locals.pbToken);
 
 	if (!backend.enabled) {
 		return {
@@ -50,7 +52,13 @@ export const load: PageServerLoad = async () => {
 					);
 
 		return { initialReport: report, reportSource: 'backend' as ReportSource };
-	} catch {
+	} catch (err) {
+		// Token rechazado por el backend: la sesión ya no es válida, se vuelve al login.
+		if (err instanceof BackendHttpError && err.status === 401) {
+			if (locals.pbToken) forgetToken(locals.pbToken);
+			clearSessionCookie(cookies);
+			throw redirect(303, `/login?redirectTo=${encodeURIComponent(url.pathname)}`);
+		}
 		// No silencioso: se expone el fallo para que la UI lo muestre, sin inventar datos.
 		return {
 			initialReport: sampleReport(),
