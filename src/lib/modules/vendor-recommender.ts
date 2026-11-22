@@ -4,6 +4,7 @@ import type {
 	PipelineWeights,
 	ScoredVendorOffer
 } from '$lib/types/sourcing';
+import { flag, type FlagMessage } from '$lib/domain/flags';
 import { classifyTier } from '$lib/utils/format';
 
 function normalizeSupplierKey(listing: AlibabaListing): string {
@@ -108,9 +109,9 @@ export function evaluateVendorsForGroup(params: {
 		weights.price + weights.moq + weights.tradeAssurance + weights.years + weights.certs || 100;
 
 	for (const listing of dedupedListings) {
-		const pros: string[] = [];
-		const warnings: string[] = [];
-		const disqualificationReasons: string[] = [];
+		const pros: FlagMessage[] = [];
+		const warnings: FlagMessage[] = [];
+		const disqualificationReasons: FlagMessage[] = [];
 
 		const price = getEffectivePrice(listing);
 		const isBaitPrice =
@@ -121,27 +122,29 @@ export function evaluateVendorsForGroup(params: {
 
 		// --- Hard Filters ---
 		if (filters.requireTradeAssurance && !listing.hasTradeAssurance) {
-			disqualificationReasons.push('Missing mandatory Trade Assurance');
+			disqualificationReasons.push(flag('DQ_TRADE_ASSURANCE_REQUIRED'));
 		}
 		if (filters.minYears > 0 && (listing.yearsActive ?? 0) < filters.minYears) {
 			disqualificationReasons.push(
-				`Supplier tenure (${listing.yearsActive ?? 'unknown'} yrs) below minimum ${filters.minYears} yrs`
+				listing.yearsActive === null
+					? flag('DQ_MIN_YEARS_UNKNOWN', { min: filters.minYears })
+					: flag('DQ_MIN_YEARS', { years: listing.yearsActive, min: filters.minYears })
 			);
 		}
 		if (effectiveMaxPrice !== null && price !== null && price > effectiveMaxPrice) {
-			disqualificationReasons.push(
-				`Listed price ($${price.toFixed(2)}) exceeds max budget ($${effectiveMaxPrice.toFixed(2)})`
-			);
+			disqualificationReasons.push(flag('DQ_PRICE_ABOVE_MAX', { price, max: effectiveMaxPrice }));
 		}
 		if (filters.strictMoq && (listing.moq === null || listing.moq > targetQty)) {
 			disqualificationReasons.push(
-				`Strict MOQ failed (MOQ: ${listing.moq ?? 'unconfirmed'} vs target ${targetQty})`
+				listing.moq === null
+					? flag('DQ_STRICT_MOQ_UNCONFIRMED', { qty: targetQty })
+					: flag('DQ_STRICT_MOQ', { moq: listing.moq, qty: targetQty })
 			);
 		}
 		if (filters.strictCerts && combinedRequiredCerts.length > 0) {
 			const missing = combinedRequiredCerts.filter((c) => !listing.certifications.includes(c));
 			if (missing.length > 0) {
-				disqualificationReasons.push(`Missing required certifications: ${missing.join(', ')}`);
+				disqualificationReasons.push(flag('DQ_MISSING_CERTS', { certs: missing.join(', ') }));
 			}
 		}
 
@@ -149,23 +152,23 @@ export function evaluateVendorsForGroup(params: {
 		let priceScore = 50;
 		if (price === null) {
 			priceScore = 35;
-			warnings.push('Price not listed on search card');
+			warnings.push(flag('W_PRICE_NOT_LISTED'));
 		} else if (isBaitPrice) {
 			priceScore = 25;
-			warnings.push('Suspicious bait price (<25% of group median) — verify real unit quote');
+			warnings.push(flag('W_BAIT_PRICE'));
 		} else if (groupMedian && groupMedian > 0) {
 			const ratio = price / groupMedian;
 			if (ratio <= 0.85) {
 				priceScore = 95;
-				pros.push('Highly competitive price within product family');
+				pros.push(flag('P_PRICE_COMPETITIVE'));
 			} else if (ratio <= 1.0) {
 				priceScore = 82;
-				pros.push('Below-median family pricing');
+				pros.push(flag('P_PRICE_BELOW_MEDIAN'));
 			} else if (ratio <= 1.25) {
 				priceScore = 65;
 			} else {
 				priceScore = Math.max(25, Math.round(80 - (ratio - 1) * 40));
-				warnings.push('Above-median family pricing');
+				warnings.push(flag('W_ABOVE_MEDIAN_PRICE'));
 			}
 		}
 
@@ -173,43 +176,45 @@ export function evaluateVendorsForGroup(params: {
 		let moqScore = 40;
 		if (listing.moq === null) {
 			moqScore = 40;
-			warnings.push('MOQ not confirmed on listing');
+			warnings.push(flag('W_MOQ_UNCONFIRMED'));
 		} else if (listing.moq <= targetQty) {
 			moqScore = 100;
-			pros.push(`MOQ (${listing.moq} ${listing.moqUnit}) fits target quantity (${targetQty})`);
+			pros.push(
+				flag('P_MOQ_FITS', { moq: listing.moq, unit: listing.moqUnit, qty: targetQty })
+			);
 		} else if (listing.moq <= targetQty * 1.5) {
 			moqScore = 65;
-			warnings.push(
-				`MOQ (${listing.moq}) is up to 1.5x target (${targetQty}) — likely negotiable`
-			);
+			warnings.push(flag('W_MOQ_NEGOTIABLE', { moq: listing.moq, qty: targetQty }));
 		} else {
 			moqScore = 20;
-			warnings.push(`MOQ (${listing.moq}) exceeds target quantity (${targetQty})`);
+			warnings.push(flag('W_MOQ_EXCEEDS_QTY', { moq: listing.moq, qty: targetQty }));
 		}
 
 		if (unitMismatch) {
-			warnings.push(`Unit mismatch: listing uses ${listing.moqUnit}, RFQ requests ${targetUnit}`);
+			warnings.push(
+				flag('W_UNIT_MISMATCH', { listingUnit: listing.moqUnit, rfqUnit: targetUnit })
+			);
 		}
 
 		// --- 3. Trade Assurance Score (default 20%) ---
 		const taScore = listing.hasTradeAssurance ? 100 : 0;
 		if (listing.hasTradeAssurance) {
-			pros.push('Protected by Alibaba Trade Assurance');
+			pros.push(flag('P_TRADE_ASSURANCE'));
 		} else {
-			warnings.push('Trade Assurance badge not detected');
+			warnings.push(flag('W_NO_TRADE_ASSURANCE'));
 		}
 
 		// --- 4. Years Active Score (default 15%, linear to 8+ yrs) ---
 		let yearsScore = 30;
 		if (listing.yearsActive === null) {
 			yearsScore = 30;
-			warnings.push('Supplier tenure unknown — confirm company background');
+			warnings.push(flag('W_TENURE_UNKNOWN'));
 		} else {
 			yearsScore = Math.min(100, Math.round((listing.yearsActive / 8) * 100));
 			if (listing.yearsActive >= 5) {
-				pros.push(`${listing.yearsActive} years active on Alibaba`);
+				pros.push(flag('P_YEARS_ACTIVE', { years: listing.yearsActive }));
 			} else if (listing.yearsActive < 2) {
-				warnings.push(`New supplier (${listing.yearsActive} yr active)`);
+				warnings.push(flag('W_NEW_SUPPLIER'));
 			}
 		}
 
@@ -219,14 +224,14 @@ export function evaluateVendorsForGroup(params: {
 			const matched = combinedRequiredCerts.filter((c) => listing.certifications.includes(c));
 			certsScore = Math.round((matched.length / combinedRequiredCerts.length) * 100);
 			if (matched.length === combinedRequiredCerts.length) {
-				pros.push(`Matches all required certifications (${matched.join(', ')})`);
+				pros.push(flag('P_CERTS_MATCH', { certs: matched.join(', ') }));
 			} else {
 				const missing = combinedRequiredCerts.filter((c) => !listing.certifications.includes(c));
-				warnings.push(`Unverified certifications: ${missing.join(', ')}`);
+				warnings.push(flag('W_UNVERIFIED_CERTS', { certs: missing.join(', ') }));
 			}
 		} else if (listing.certifications.length > 0) {
 			certsScore = Math.min(100, 60 + listing.certifications.length * 15);
-			pros.push(`Compliance badges: ${listing.certifications.join(', ')}`);
+			pros.push(flag('P_COMPLIANCE_BADGES', { certs: listing.certifications.join(', ') }));
 		} else {
 			certsScore = 35;
 		}

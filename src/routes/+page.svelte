@@ -11,10 +11,13 @@
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import Topbar from '$lib/components/layout/Topbar.svelte';
 	import PipelineControls from '$lib/components/pipeline/PipelineControls.svelte';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
 	import { sourcingStore } from '$lib/stores/sourcing.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const prefs = usePreferences();
 
 	let hydrated = false;
 	$effect(() => {
@@ -37,11 +40,8 @@
 </script>
 
 <svelte:head>
-	<title>Sourcewise — Supplier Overview</title>
-	<meta
-		name="description"
-		content="Alibaba B2B sourcing and vendor recommendation dashboard with zero-LLM product family grouping, ScrapingBee credit controls, and offline re-scoring."
-	/>
+	<title>{prefs.t('app.title')}</title>
+	<meta name="description" content={prefs.t('app.description')} />
 </svelte:head>
 
 <main class="app-shell">
@@ -55,8 +55,7 @@
 	<section class="main-area">
 		<Topbar
 			catalogName={sourcingStore.report.catalogName}
-			proxyMode={sourcingStore.liveCreditEstimate.proxyMode}
-			fromCache={sourcingStore.config.fromCache}
+			itemCount={sourcingStore.items.length}
 			cautionCount={sourcingStore.cautionCount}
 			onReviewFlagged={handleReviewFlagged}
 		/>
@@ -65,7 +64,7 @@
 			<PageHeader
 				activeTab={sourcingStore.activeTab}
 				runDate={sourcingStore.report.runDate}
-				onExportExcel={() => sourcingStore.exportExcel()}
+				onExportExcel={() => sourcingStore.exportExcel(prefs.locale)}
 				onExportJson={() => sourcingStore.exportJson()}
 				onPrint={() => window.print()}
 			/>
@@ -81,9 +80,12 @@
 					id="overview-view"
 					role="tabpanel"
 					aria-labelledby="overview-tab"
+					tabindex="0"
 				>
 					<StatGrid
-						creditEstimate={sourcingStore.liveCreditEstimate}
+						itemCount={sourcingStore.items.length}
+						familyCount={sourcingStore.report.families.length}
+						cautionCount={sourcingStore.cautionCount}
 						averageScore={sourcingStore.averageScore}
 					/>
 
@@ -150,19 +152,17 @@
 					</div>
 				</div>
 			{:else if sourcingStore.activeTab === 'graphs'}
-				<section
+				<div
 					class="graphs-view"
 					id="graphs-view"
 					role="tabpanel"
 					aria-labelledby="graphs-tab"
+					tabindex="0"
 				>
 					<div class="graphs-intro">
-						<span class="eyebrow">ANALYTICS</span>
-						<h2>Product coverage &amp; recommendation scores</h2>
-						<p>
-							Explore zero-LLM product family groupings and click any product bar to inspect its
-							full vendor and RFQ score breakdown.
-						</p>
+						<span class="eyebrow">{prefs.t('graphs.eyebrow')}</span>
+						<h2>{prefs.t('graphs.title')}</h2>
+						<p>{prefs.t('graphs.body')}</p>
 					</div>
 
 					<DashboardGraphs
@@ -171,33 +171,36 @@
 						average={sourcingStore.averageScore}
 						onSelect={(item) => (sourcingStore.selectedItem = item)}
 					/>
-				</section>
+				</div>
 			{:else if sourcingStore.activeTab === 'pipeline'}
-				<section
+				<div
 					class="graphs-view"
 					id="pipeline-view"
 					role="tabpanel"
 					aria-labelledby="pipeline-tab"
+					tabindex="0"
 				>
 					<PipelineControls
 						bind:config={sourcingStore.config}
-						catalogName={sourcingStore.report.catalogName}
-						creditEstimate={sourcingStore.liveCreditEstimate}
 						disqualifiedCount={sourcingStore.report.disqualified.length}
-						statusMessage={sourcingStore.statusMessage}
+						status={sourcingStore.statusMessage}
 						isBusy={sourcingStore.isBusy}
 						onGranularityChange={(g) => sourcingStore.setGranularity(g)}
-						onRecalculate={() => sourcingStore.recalculateOffline(false)}
-						onRunLiveScrape={() => sourcingStore.runLiveScrape()}
+						onValidate={() => sourcingStore.recalculateOffline(false)}
+						onCompare={() => {
+							sourcingStore.setTab('overview');
+							scrollToSection('suppliers');
+						}}
+						onGenerateRfq={() => sourcingStore.generateRfqDraft()}
 						onImportFile={(file) => sourcingStore.importFile(file)}
 						onResetSample={() => sourcingStore.resetToSample()}
 					/>
-				</section>
+				</div>
 			{/if}
 
 			<footer class="page-footer">
-				Sourcewise <span>·</span> Sourcing insights <span>·</span> Data sourced from the Alibaba
-				ScrapingBee sourcing pipeline. Verify MOQ, specs, and supplier tenure before ordering.
+				CuadraMás <span>·</span>
+				{prefs.t('app.footer')}
 			</footer>
 		</div>
 	</section>

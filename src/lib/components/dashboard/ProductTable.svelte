@@ -1,7 +1,14 @@
 <script lang="ts">
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import type { RecommendationItem, ScoreFilter } from '$lib/types/sourcing';
-	import { formatScore, padPosition, scoreCellClass, tierClass } from '$lib/utils/format';
+	import { hasNoSupplier } from '$lib/domain/labels';
+	import type { MessageKey } from '$lib/i18n';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
+	import { ALL_FILTER, type RecommendationItem, type ScoreFilter } from '$lib/types/sourcing';
+	import { padPosition, scoreTone, tierTone } from '$lib/utils/format';
 
 	interface Props {
 		items: RecommendationItem[];
@@ -51,25 +58,39 @@
 		onInspectItem
 	}: Props = $props();
 
-	let rangeStart = $derived(totalFiltered === 0 ? 0 : (currentPage - 1) * pageSize + 1);
-	let rangeEnd = $derived(Math.min(currentPage * pageSize, totalFiltered));
+	const { t, tn, n, score, qty, budget, moq, price, source, tier, flag } = usePreferences();
+
+	const rangeStart = $derived(totalFiltered === 0 ? 0 : (currentPage - 1) * pageSize + 1);
+	const rangeEnd = $derived(Math.min(currentPage * pageSize, totalFiltered));
+
+	const scoreFilters: { value: ScoreFilter; label: MessageKey }[] = [
+		{ value: 'all', label: 'filter.score.all' },
+		{ value: 'strong', label: 'filter.score.strong' },
+		{ value: 'consider', label: 'filter.score.consider' },
+		{ value: 'score50', label: 'filter.score.score50' },
+		{ value: 'review', label: 'filter.score.review' }
+	];
+
+	function supplierName(item: RecommendationItem): string {
+		return hasNoSupplier(item.supplier) ? t('common.noQualifyingSupplier') : item.supplier;
+	}
 </script>
 
-<article class="panel products-panel" id="products">
+<Card variant="panel" class="products-panel" id="products">
 	<div class="panel-heading products-heading">
 		<div>
 			<h2>
-				Product recommendations <span class="product-count">{totalFiltered}</span>
+				{t('table.title')} <span class="product-count">{totalFiltered}</span>
 			</h2>
-			<p>Top-ranked listing per requested product · 75% Vendor Score + 25% RFQ Fit</p>
+			<p>{t('table.subtitle')}</p>
 		</div>
 
 		<div class="table-controls">
 			<label class="search-box">
 				<Icon name="search" size={15} />
 				<input
-					aria-label="Search products or providers"
-					placeholder="Search products..."
+					aria-label={t('table.search.aria')}
+					placeholder={t('table.search.placeholder')}
 					value={query}
 					oninput={(e) => onQueryChange(e.currentTarget.value)}
 				/>
@@ -78,26 +99,24 @@
 			<label class="filter-box">
 				<Icon name="filter" size={14} />
 				<select
-					aria-label="Filter by score or review status"
+					aria-label={t('table.filter.score.aria')}
 					value={scoreFilter}
 					onchange={(e) => onScoreFilterChange(e.currentTarget.value as ScoreFilter)}
 				>
-					<option value="All scores">All scores</option>
-					<option value="Strong Recommend (75+)">Strong Recommend (75+)</option>
-					<option value="Consider (55+)">Consider (55+)</option>
-					<option value="Score 50+">Score 50+</option>
-					<option value="Needs review">Needs review</option>
+					{#each scoreFilters as option (option.value)}
+						<option value={option.value}>{t(option.label)}</option>
+					{/each}
 				</select>
 				<span class="chevron-icon"><Icon name="chevron-down" size={13} /></span>
 			</label>
 
 			<label class="filter-box">
 				<select
-					aria-label="Filter by product family"
+					aria-label={t('table.filter.family.aria')}
 					value={familyFilter}
 					onchange={(e) => onFamilyFilterChange(e.currentTarget.value)}
 				>
-					<option value="All families">All families</option>
+					<option value={ALL_FILTER}>{t('filter.family.all')}</option>
 					{#each familyCodes as family (family)}
 						<option value={family}>{family}</option>
 					{/each}
@@ -107,11 +126,11 @@
 
 			<label class="filter-box">
 				<select
-					aria-label="Filter by provider"
+					aria-label={t('table.filter.supplier.aria')}
 					value={supplierFilter}
 					onchange={(e) => onSupplierFilterChange(e.currentTarget.value)}
 				>
-					<option value="All providers">All providers</option>
+					<option value={ALL_FILTER}>{t('filter.supplier.all')}</option>
 					{#each providers as provider (provider)}
 						<option value={provider}>{provider}</option>
 					{/each}
@@ -125,12 +144,12 @@
 		<table>
 			<thead>
 				<tr>
-					<th>PRODUCT</th>
-					<th>QTY / BUDGET</th>
-					<th>RECOMMENDED SUPPLIER · ALTERNATIVES</th>
-					<th>LISTED PRICE</th>
-					<th>SCORE</th>
-					<th>STATUS</th>
+					<th>{t('table.col.product')}</th>
+					<th>{t('table.col.qtyBudget')}</th>
+					<th>{t('table.col.supplier')}</th>
+					<th>{t('table.col.price')}</th>
+					<th>{t('table.col.score')}</th>
+					<th>{t('table.col.status')}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -151,36 +170,31 @@
 										<small>{item.family} · {item.familyName}</small>
 									</span>
 								</span>
-								<span
-									class="accordion-chevron"
-									class:open={expandedRowPos === item.pos}
-								>
+								<span class="accordion-chevron" class:open={expandedRowPos === item.pos}>
 									<Icon name="chevron-down" size={14} />
 								</span>
 							</button>
 						</td>
 						<td>
-							{item.qty}
-							<small class="cell-sub">Budget {item.budget}</small>
-						</td>
-						<td>
-							<span class="supplier-cell">{item.supplier}</span>
+							{qty(item.qtyNumeric, item.unit)}
 							<small class="cell-sub">
-								{item.vendors > 1
-									? `${item.vendors - 1} alternatives · ${item.vendors} listings`
-									: 'No additional listings'}
+								{t('table.budget', { value: budget(item.minPrice, item.maxPrice) })}
 							</small>
 						</td>
-						<td class="price-cell">{item.price}</td>
 						<td>
-							<span class={`score-cell ${scoreCellClass(item.score)}`}>
-								{formatScore(item.score)}
-							</span>
+							<span class="supplier-cell">{supplierName(item)}</span>
+							<small class="cell-sub">
+								{item.vendors > 1
+									? tn('table.alternatives', item.vendors - 1, { listings: item.vendors })
+									: t('table.noAdditional')}
+							</small>
+						</td>
+						<td class="price-cell">{price(item.price)}</td>
+						<td>
+							<Badge tone={scoreTone(item.score)}>{score(item.score)}</Badge>
 						</td>
 						<td>
-							<span class={`caution-badge ${tierClass(item.tier)}`}>
-								<span></span>{item.tier}
-							</span>
+							<Badge tone={tierTone(item.tier)} size="sm" dot>{tier(item.tier)}</Badge>
 						</td>
 					</tr>
 
@@ -189,46 +203,54 @@
 							<td colspan="6">
 								<div class="expanded-details">
 									<div>
-										<small>Recommended provider</small>
-										<b>{item.supplier}</b>
+										<small>{t('table.detail.provider')}</small>
+										<b>{supplierName(item)}</b>
 									</div>
 									<div>
-										<small>MOQ · Tenure · Trade Assurance</small>
+										<small>{t('table.detail.moqTenureTa')}</small>
 										<b>
-											{item.moqLabel} · {item.yearsActive !== null ? `${item.yearsActive} yrs` : 'Unknown'} · {item.hasTradeAssurance ? 'TA Verified' : 'No TA'}
+											{moq(item.moqLabel)} ·
+											{item.yearsActive !== null
+												? tn('common.years', item.yearsActive)
+												: t('common.unknown')} ·
+											{item.hasTradeAssurance ? t('table.ta.verified') : t('table.ta.none')}
 										</b>
 									</div>
 									<div>
-										<small>Score components</small>
+										<small>{t('table.detail.scoreComponents')}</small>
 										<b>
-											Vendor {formatScore(item.breakdown.vendorScore)} (75%) · RFQ Fit {item.breakdown.rfqFitScore} (25%)
+											{t('table.detail.scoreValue', {
+												vendor: score(item.breakdown.vendorScore),
+												rfq: n(item.breakdown.rfqFitScore)
+											})}
 										</b>
 									</div>
 									<div>
-										<small>Requested quantity &amp; budget</small>
-										<b>{item.qty} · {item.budget}</b>
+										<small>{t('table.detail.qtyBudget')}</small>
+										<b>{qty(item.qtyNumeric, item.unit)} · {budget(item.minPrice, item.maxPrice)}</b>
 									</div>
 									<div>
-										<small>Listing price</small>
-										<b>{item.price}</b>
+										<small>{t('table.detail.listingPrice')}</small>
+										<b>{price(item.price)}</b>
 									</div>
 									<div>
-										<small>Review flags</small>
-										<b>{item.issues} flags · {item.disqualifiedCount} disqualified</b>
+										<small>{t('table.detail.flags')}</small>
+										<b>
+											{t('table.detail.flagsValue', {
+												flags: item.issues,
+												disqualified: item.disqualifiedCount
+											})}
+										</b>
 									</div>
 									<div class="expanded-details-footer">
 										<p>
 											{item.warnings.length > 0
-												? item.warnings.join(' · ')
-												: 'No warnings flagged for this recommendation.'}
+												? item.warnings.map(flag).join(' · ')
+												: t('table.detail.noWarnings')}
 										</p>
-										<button
-											type="button"
-											class="export-button secondary"
-											onclick={() => onInspectItem(item)}
-										>
-											Full score breakdown
-										</button>
+										<Button variant="secondary" onclick={() => onInspectItem(item)}>
+											{t('table.detail.fullBreakdown')}
+										</Button>
 									</div>
 								</div>
 							</td>
@@ -239,20 +261,20 @@
 		</table>
 
 		{#if items.length === 0}
-			<div class="empty-state">No products match your search or active filters.</div>
+			<EmptyState icon="search">{t('table.empty')}</EmptyState>
 		{/if}
 	</div>
 
 	<div class="table-footer">
 		<span class="table-range">
-			Showing <b>{rangeStart}–{rangeEnd}</b> of <b>{totalFiltered}</b> products
+			{t('table.range', { from: rangeStart, to: rangeEnd, total: totalFiltered })}
 		</span>
 
 		<div class="pagination-controls">
 			<label>
-				Rows
+				{t('table.rows')}
 				<select
-					aria-label="Products per page"
+					aria-label={t('table.rows.aria')}
 					value={pageSize}
 					onchange={(e) => onPageSizeChange(Number(e.currentTarget.value))}
 				>
@@ -263,16 +285,16 @@
 			</label>
 			<button
 				type="button"
-				aria-label="Previous page"
+				aria-label={t('table.prev')}
 				disabled={currentPage <= 1}
 				onclick={() => onPageChange(Math.max(1, currentPage - 1))}
 			>
 				<Icon name="chevron-left" size={14} />
 			</button>
-			<span>Page {currentPage} of {pageCount}</span>
+			<span>{t('table.page', { page: currentPage, pages: pageCount })}</span>
 			<button
 				type="button"
-				aria-label="Next page"
+				aria-label={t('table.next')}
 				disabled={currentPage >= pageCount}
 				onclick={() => onPageChange(Math.min(pageCount, currentPage + 1))}
 			>
@@ -280,6 +302,6 @@
 			</button>
 		</div>
 
-		<span class="table-source">Source: {sourceLabel}</span>
+		<span class="table-source">{t('table.source', { source: source(sourceLabel) })}</span>
 	</div>
-</article>
+</Card>

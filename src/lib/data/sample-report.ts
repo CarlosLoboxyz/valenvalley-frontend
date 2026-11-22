@@ -1,4 +1,6 @@
 import { DEFAULT_PIPELINE_CONFIG } from '$lib/config/pipeline-config';
+import { flag, type FlagMessage } from '$lib/domain/flags';
+import { MOQ_UNCONFIRMED, SOURCE_CONSOLIDATED } from '$lib/domain/labels';
 import { calculateCreditEstimate } from '$lib/modules/cost-estimator';
 import type {
 	CrossItemVendor,
@@ -135,20 +137,20 @@ export function createInitialSourcingReport(): SourcingReport {
 	}
 
 	const recommendations: RecommendationItem[] = SEED_ROWS.map((row) => {
-		const warnings: string[] = [
-			'MOQ not confirmed on search card',
-			'Brand mismatch: OEM Generic not found in listing'
+		const warnings: FlagMessage[] = [
+			flag('W_MOQ_UNCONFIRMED'),
+			flag('W_BRAND_MISMATCH', { brand: 'OEM Generic' })
 		];
-		if (row.issues >= 4) warnings.push('Listed price below target floor — verify spec or grade');
-		if (row.issues >= 5) warnings.push('Supplier tenure unknown — confirm company background');
-		if (row.score < 52) warnings.push('Trade Assurance badge not detected on search card');
+		if (row.issues >= 4) warnings.push(flag('W_BELOW_TARGET_FLOOR', { min: row.minPrice }));
+		if (row.issues >= 5) warnings.push(flag('W_TENURE_UNKNOWN'));
+		if (row.score < 52) warnings.push(flag('W_NO_TRADE_ASSURANCE'));
 
-		const pros: string[] = [];
+		const pros: FlagMessage[] = [];
 		if (row.score >= 52) {
-			pros.push('Competitive family pricing');
-			pros.push('Trade Assurance signal detected');
+			pros.push(flag('P_PRICE_COMPETITIVE'));
+			pros.push(flag('P_TRADE_ASSURANCE'));
 		} else {
-			pros.push('Low unit price quote available');
+			pros.push(flag('P_LOW_PRICE_QUOTE'));
 		}
 
 		return {
@@ -185,7 +187,7 @@ export function createInitialSourcingReport(): SourcingReport {
 			alternatives: [],
 			disqualifiedCount: 0,
 			listingUrl: `https://www.alibaba.com/product-detail/${slugify(row.product)}.html`,
-			moqLabel: row.issues <= 3 ? `${Math.min(100, row.qtyNumeric)} ${row.unit}` : 'Unconfirmed',
+			moqLabel: row.issues <= 3 ? `${Math.min(100, row.qtyNumeric)} ${row.unit}` : MOQ_UNCONFIRMED,
 			yearsActive: row.score >= 52 ? 5 : null,
 			hasTradeAssurance: row.score >= 52,
 			certifications: row.score >= 52 ? ['ISO9001'] : []
@@ -221,8 +223,8 @@ export function createInitialSourcingReport(): SourcingReport {
 	});
 
 	return {
-		runDate: 'NOV 22, 2026',
-		sourceLabel: 'Alibaba · ScrapingBee family search',
+		runDate: '2026-11-22',
+		sourceLabel: SOURCE_CONSOLIDATED,
 		catalogName: 'products.xlsx',
 		config: structuredClone(DEFAULT_PIPELINE_CONFIG),
 		rfqItems,

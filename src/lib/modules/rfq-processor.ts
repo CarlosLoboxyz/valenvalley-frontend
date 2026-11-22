@@ -10,6 +10,13 @@ import type {
 	ScoredVendorOffer,
 	SourcingReport
 } from '$lib/types/sourcing';
+import { flag, type FlagMessage } from '$lib/domain/flags';
+import {
+	MOQ_NOT_AVAILABLE,
+	MOQ_UNCONFIRMED,
+	SOURCE_CONSOLIDATED,
+	hasNoSupplier
+} from '$lib/domain/labels';
 import { classifyTier, formatBudgetRange, normalizeQueryKey, parsePriceRange } from '$lib/utils/format';
 import { calculateCreditEstimate } from './cost-estimator';
 import { groupProductsIntoFamilies } from './family-grouper';
@@ -167,11 +174,11 @@ export function parseRfqWorkbook(buffer: ArrayBuffer): RfqItem[] {
 
 function computeRfqFitScore(item: RfqItem, offer: ScoredVendorOffer): {
 	rfqFitScore: number;
-	warnings: string[];
-	pros: string[];
+	warnings: FlagMessage[];
+	pros: FlagMessage[];
 } {
-	const warnings: string[] = [];
-	const pros: string[] = [];
+	const warnings: FlagMessage[] = [];
+	const pros: FlagMessage[] = [];
 	const listingText = `${offer.listing.title} ${offer.listing.supplier}`.toLowerCase();
 
 	// 1. Technical spec keyword match (65% of RFQ fit)
@@ -192,13 +199,13 @@ function computeRfqFitScore(item: RfqItem, offer: ScoredVendorOffer): {
 	const cleanBrand = item.brand.toLowerCase().replace(/or similar|equivalent|oem|generic/g, '').trim();
 	if (cleanBrand && listingText.includes(cleanBrand)) {
 		brandScore = 100;
-		pros.push(`Brand match: ${item.brand}`);
+		pros.push(flag('P_BRAND_MATCH', { brand: item.brand }));
 	} else if (item.flexibleBrand) {
 		brandScore = 55;
-		warnings.push(`Brand mismatch: ${item.brand} not explicitly found in listing`);
+		warnings.push(flag('W_BRAND_MISMATCH', { brand: item.brand }));
 	} else {
 		brandScore = 20;
-		warnings.push(`Strict brand requested (${item.brand}) not found in listing`);
+		warnings.push(flag('W_STRICT_BRAND_MISSING', { brand: item.brand }));
 	}
 
 	const rfqFitScore = Math.round(specScore * 0.65 + brandScore * 0.35);
@@ -279,16 +286,12 @@ export function buildSourcingReport(params: {
 						position: item.position,
 						product: item.name,
 						supplier: offer.supplier,
-						reasons: [
-							`Listed price ($${listedMin.toFixed(2)}) below strict min price floor ($${item.minPrice.toFixed(2)})`
-						]
+						reasons: [flag('DQ_BELOW_MIN_PRICE_FLOOR', { price: listedMin, min: item.minPrice })]
 					});
 					continue;
 				} else {
 					finalScore = Math.max(0, finalScore - 6);
-					extraWarnings.push(
-						`Listed price below target floor ($${item.minPrice.toFixed(2)}) — verify spec or grade`
-					);
+					extraWarnings.push(flag('W_BELOW_TARGET_FLOOR', { min: item.minPrice }));
 				}
 			}
 
@@ -347,7 +350,7 @@ export function buildSourcingReport(params: {
 				moqLabel:
 					topOffer.listing.moq !== null
 						? `${topOffer.listing.moq} ${topOffer.listing.moqUnit}`
-						: 'Unconfirmed',
+						: MOQ_UNCONFIRMED,
 				yearsActive: topOffer.listing.yearsActive,
 				hasTradeAssurance: topOffer.listing.hasTradeAssurance,
 				certifications: topOffer.listing.certifications
@@ -367,7 +370,7 @@ export function buildSourcingReport(params: {
 				brand: item.brand,
 				score: 0,
 				tier: 'Disqualified',
-				supplier: 'No qualifying supplier',
+				supplier: '',
 				supplierId: '',
 				price: '—',
 				issues: 1,
@@ -383,11 +386,11 @@ export function buildSourcingReport(params: {
 					finalScore: 0
 				},
 				pros: [],
-				warnings: ['All scraped candidates were filtered out by current hard rules'],
+				warnings: [flag('W_NO_CANDIDATES')],
 				alternatives: [],
 				disqualifiedCount: disqualified.length,
 				listingUrl: '',
-				moqLabel: 'N/A',
+				moqLabel: MOQ_NOT_AVAILABLE,
 				yearsActive: null,
 				hasTradeAssurance: false,
 				certifications: []
@@ -398,7 +401,7 @@ export function buildSourcingReport(params: {
 	// Cross-item vendor aggregation (consolidation opportunities)
 	const vendorGroups = new Map<string, RecommendationItem[]>();
 	for (const rec of recommendations) {
-		if (!rec.supplier || rec.supplier === 'No qualifying supplier') continue;
+		if (hasNoSupplier(rec.supplier)) continue;
 		const list = vendorGroups.get(rec.supplier) ?? [];
 		list.push(rec);
 		vendorGroups.set(rec.supplier, list);
@@ -425,8 +428,8 @@ export function buildSourcingReport(params: {
 	});
 
 	return {
-		runDate: params.runDate ?? new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase(),
-		sourceLabel: params.sourceLabel ?? 'Alibaba · ScrapingBee family search',
+		runDate: params.runDate ?? new Date().toISOString().slice(0, 10),
+		sourceLabel: params.sourceLabel ?? SOURCE_CONSOLIDATED,
 		catalogName: params.catalogName ?? 'products.xlsx',
 		config,
 		rfqItems,

@@ -1,0 +1,266 @@
+/* Layout de la aplicación: sidebar, topbar y contenedor de página. */
+/* Sidebar */
+
+.sidebar {
+	width: 238px;
+	position: fixed;
+	inset: 0 auto 0 0;
+	background: var(--sidebar);
+	border-right: 1px solid var(--sidebar-border);
+	padding: 23px 15px 14px;
+	display: flex;
+	flex-direction: column;
+	z-index: 2;
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	padding: 0 8px;
+	text-decoration: none;
+}
+
+.workspace-label {
+	font-size: 9px;
+	font-weight: 700;
+	letter-spacing: 1.2px;
+	color: var(--sidebar-muted);
+	margin: 38px 9px 11px;
+}
+
+.nav {
+	display: grid;
+	gap: 4px;
+}
+
+.nav-item {
+	height: 39px;
+	padding: 0 10px;
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	color: var(--sidebar-muted);
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 550;
+	font-family: inherit;
+	text-align: left;
+	cursor: pointer;
+	background: transparent;
+	border: 0;
+	width: 100%;
+	border-radius: var(--radius-control);
+}
+
+.nav-item:hover {
+	background: var(--sidebar-hover);
+	color: var(--sidebar-foreground);
+}
+
+.nav-item.active {
+	background: var(--sidebar-accent);
+	color: var(--sidebar-accent-foreground);
+	font-weight: 650;
+	box-shadow: inset 3px 0 0 var(--orange);
+}
+
+.nav-count {
+	margin-left: auto;
+	background: var(--orange);
+	color: var(--white);
+	padding: 2px 7px;
+	font-size: 10px;
+	font-weight: 650;
+}
+
+.side-bottom {
+	margin-top: auto;
+}
+
+.help-card {
+	border: 1px solid var(--sidebar-border);
+	background: var(--sidebar-accent);
+	padding: 14px;
+	margin: 0 1px 14px;
+}
+
+.help-icon {
+	color: var(--yellow);
+	margin-bottom: 9px;
+}
+
+.help-card b {
+	font-size: 11px;
+	color: var(--sidebar-foreground);
+}
+
+.help-card p {
+	font-size: 10px;
+	line-height: 1.55;
+	color: var(--sidebar-muted);
+	margin: 6px 0 9px;
+}
+
+.help-card button {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--yellow);
+	font-family: inherit;
+	font-size: 10px;
+	font-weight: 650;
+	background: transparent;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+}
+
+.help-card button:hover {
+	color: var(--orange);
+}
+
+.profile {
+	border-top: 1px solid var(--sidebar-border);
+	padding: 14px 3px 0;
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.avatar {
+	width: 30px;
+	height: 30px;
+	background: var(--orange);
+	color: var(--white);
+	font-weight: 700;
+	display: grid;
+	place-items: center;
+	font-size: 10px;
+}
+
+.profile b,
+.profile small {
+	display: block;
+	font-size: 10px;
+}
+
+.profile b {
+	color: var(--sidebar-foreground);
+}
+
+.profile small {
+	margin-top: 3px;
+	color: var(--sidebar-muted);
+}
+
+.profile .icon-btn {
+	margin-left: auto;
+}
+
+/* Main Area & Topbar */
+
+.main-area {
+	margin-left: 238px;
+	min-height: 100vh;
+}
+
+.topbar {
+	height: 54px;
+	background: var(--topbar-bg);
+	border-bottom: 1px solid var(--topbar-border);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 37px;
+}
+
+.crumb {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--topbar-muted);
+	font-size: 11px;
+}
+
+.crumb__sep {
+	color: var(--sidebar-muted);
+}
+
+.crumb b {
+	font-weight: 550;
+	color: var(--topbar-fg);
+}
+
+.topbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.mode-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 9px;
+	font-size: 9px;
+	font-weight: 650;
+	letter-spacing: 0.4px;
+	background: var(--topbar-chip-bg);
+	border: 1px solid var(--topbar-chip-border);
+	color: var(--yellow);
+}
+
+/* Content Shell */
+
+.content {
+	max-width: 1320px;
+	margin: 0 auto;
+	padding: 30px 37px 18px;
+	display: flex;
+	flex-direction: column;
+}
+
+.page-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.heading-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.eyebrow {
+	font-size: 9px;
+	letter-spacing: 0.9px;
+	color: var(--muted-foreground);
+	font-weight: 700;
+}
+
+.live-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	background: var(--orange);
+	vertical-align: 1px;
+	margin-right: 6px;
+}
+
+h1 {
+	font-size: 25px;
+	letter-spacing: -0.7px;
+	margin: 8px 0 5px;
+	font-weight: 660;
+	color: var(--card-foreground);
+}
+
+.subtitle {
+	font-size: 12px;
+	color: var(--muted-foreground);
+	margin: 0;
+}

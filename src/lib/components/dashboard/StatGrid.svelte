@@ -1,80 +1,78 @@
 <script lang="ts">
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import type { CreditEstimate } from '$lib/types/sourcing';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
 
 	interface Props {
-		creditEstimate: CreditEstimate;
+		itemCount: number;
+		familyCount: number;
+		cautionCount: number;
 		averageScore: string;
 	}
 
-	let { creditEstimate, averageScore }: Props = $props();
+	let { itemCount, familyCount, cautionCount, averageScore }: Props = $props();
 
-	let avgNumeric = $derived(Number(averageScore));
+	const { t, tn, n, score } = usePreferences();
+
+	const average = $derived(Number(averageScore));
+	const readyCount = $derived(Math.max(0, itemCount - cautionCount));
 </script>
 
 <div class="stat-grid">
-	<article class="stat-card">
+	<Card variant="stat">
 		<div class="stat-top">
-			Products analyzed
-			<span class="stat-icon">
-				<Icon name="shopping-bag" size={16} />
-			</span>
+			{t('stats.materials')}
+			<span class="stat-icon"><Icon name="shopping-bag" size={16} /></span>
 		</div>
 		<div class="stat-value">
-			{creditEstimate.totalProducts} <span class="stat-unit">products</span>
+			{n(itemCount)} <span class="stat-unit">{tn('common.itemsWord', itemCount)}</span>
 		</div>
-		<div class="stat-foot">Across {creditEstimate.familyCount} product families</div>
-	</article>
+		<div class="stat-foot">{tn('stats.materials.foot', familyCount)}</div>
+	</Card>
 
-	<article class="stat-card">
+	<Card variant="stat">
 		<div class="stat-top">
-			Search efficiency
-			<span class="stat-icon">
-				<Icon name="zap" size={16} />
-			</span>
+			{t('stats.review')}
+			<span class="stat-icon"><Icon name="shield-alert" size={16} /></span>
 		</div>
 		<div class="stat-value">
-			{creditEstimate.apiCallReductionPct}<span class="percent">%</span>
-			<span class="trend"><Icon name="arrow-up-right" size={14} /> saved</span>
+			{n(cautionCount)} <span class="stat-unit">{tn('common.itemsWord', cautionCount)}</span>
 		</div>
 		<div class="stat-foot">
-			{creditEstimate.familyCount} searches instead of {creditEstimate.totalProducts}
+			<Badge tone={cautionCount === 0 ? 'good' : 'warn'}>
+				{cautionCount === 0 ? t('stats.review.none') : t('stats.review.some')}
+			</Badge>
 		</div>
-	</article>
+	</Card>
 
-	<article class="stat-card">
+	<Card variant="stat" accent>
 		<div class="stat-top">
-			Estimated scrape cost
-			<span class="stat-icon">
-				<Icon name="sparkles" size={16} />
-			</span>
+			{t('stats.ready')}
+			<span class="stat-icon stat-icon--accent"><Icon name="sparkles" size={16} /></span>
 		</div>
 		<div class="stat-value">
-			{creditEstimate.estimatedCredits} <span class="stat-unit">credits</span>
+			{n(readyCount)} <span class="stat-unit">{tn('common.itemsWord', readyCount)}</span>
 		</div>
-		<div class="stat-foot">
-			~{creditEstimate.creditsSaved} credits saved vs. ungrouped ({creditEstimate.proxyMode})
-		</div>
-	</article>
+		<div class="stat-foot">{t('stats.ready.foot')}</div>
+	</Card>
 
-	<article class="stat-card">
+	<Card variant="stat">
 		<div class="stat-top">
-			Average match score
-			<span class="stat-icon">
-				<Icon name="shield-alert" size={16} />
-			</span>
+			{t('stats.score')}
+			<span class="stat-icon"><Icon name="zap" size={16} /></span>
 		</div>
 		<div class="stat-value">
-			{averageScore}<span class="out-of"> / 100</span>
+			{score(average)}<span class="out-of"> / 100</span>
 		</div>
 		<div class="stat-foot">
-			<span class="status-pill" class:good={avgNumeric >= 55}>
-				{avgNumeric >= 75
-					? 'Strong match'
-					: avgNumeric >= 55
-						? 'Consider shortlist'
-						: 'Review recommended'}
-			</span>
+			<Badge tone={average >= 55 ? 'good' : 'warn'}>
+				{average >= 75
+					? t('stats.score.strong')
+					: average >= 55
+						? t('stats.score.consider')
+						: t('stats.score.review')}
+			</Badge>
 		</div>
-	</article>
+	</Card>
 </div>

@@ -20,10 +20,18 @@ export function tierClass(tier: RecommendationTier): 'strong' | 'consider' | 'ca
 	return 'caution';
 }
 
-export function scoreCellClass(score: number): string {
-	if (score >= 75) return 'strong-score';
-	if (score >= 52) return 'consider-score';
-	return '';
+/** Tono de Badge para un nivel de recomendación. */
+export function tierTone(tier: RecommendationTier): 'strong' | 'good' | 'warn' {
+	if (tier === 'Strong Recommend') return 'strong';
+	if (tier === 'Consider') return 'good';
+	return 'warn';
+}
+
+/** Tono de Badge para un puntaje numérico (mismos umbrales que la tabla). */
+export function scoreTone(score: number): 'strong' | 'good' | 'warn' {
+	if (score >= 75) return 'strong';
+	if (score >= 52) return 'good';
+	return 'warn';
 }
 
 export function normalizeQueryKey(query: string): string {

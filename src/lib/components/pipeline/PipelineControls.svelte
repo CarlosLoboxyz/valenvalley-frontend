@@ -1,55 +1,43 @@
 <script lang="ts">
+	import Alert from '$lib/components/ui/Alert.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import { CATALOG_100_BENCHMARKS } from '$lib/modules/cost-estimator';
-	import type { CreditEstimate, Granularity, PipelineConfig } from '$lib/types/sourcing';
-	import { buildCliCommandPreview } from '$lib/utils/format';
+	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
+	import type { Granularity, PipelineConfig, StatusMessage } from '$lib/types/sourcing';
 
 	interface Props {
 		config: PipelineConfig;
-		catalogName: string;
-		creditEstimate: CreditEstimate;
 		disqualifiedCount: number;
-		statusMessage: string;
+		status: StatusMessage | null;
 		isBusy: boolean;
 		onGranularityChange: (g: Granularity) => void;
-		onRecalculate: () => void;
-		onRunLiveScrape: () => void;
+		onValidate: () => void;
+		onCompare: () => void;
+		onGenerateRfq: () => void;
 		onImportFile: (file: File) => void;
 		onResetSample: () => void;
 	}
 
 	let {
 		config = $bindable(),
-		catalogName,
-		creditEstimate,
 		disqualifiedCount,
-		statusMessage,
+		status,
 		isBusy,
 		onGranularityChange,
-		onRecalculate,
-		onRunLiveScrape,
+		onValidate,
+		onCompare,
+		onGenerateRfq,
 		onImportFile,
 		onResetSample
 	}: Props = $props();
 
-	let certsInput = $derived(config.filters.requiredCerts.join(', '));
+	const { t, tn } = usePreferences();
 
-	let cliCommand = $derived(
-		buildCliCommandPreview({
-			catalogName,
-			pages: config.pagesPerFamily,
-			stealth: config.stealthProxy,
-			fromCache: config.fromCache,
-			dryRun: config.dryRun,
-			granularity: config.granularity,
-			topN: config.topN,
-			requireTradeAssurance: config.filters.requireTradeAssurance,
-			minYears: config.filters.minYears,
-			strictMoq: config.filters.strictMoq,
-			strictCerts: config.filters.strictCerts
-		})
-	);
+	let fileInput: HTMLInputElement | undefined = $state();
+
+	const certsInput = $derived(config.filters.requiredCerts.join(', '));
 
 	function handleFileInput(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
@@ -69,68 +57,57 @@
 </script>
 
 <div class="pipeline-grid">
-	<article class="panel">
+	<Card variant="panel">
 		<div class="panel-heading">
 			<div>
-				<h2>RFQ ingestion &amp; dynamic clustering</h2>
-				<p>Zero-LLM 5-view grouping with log-price damping · ScrapingBee credit estimator</p>
+				<h2>{t('pipeline.ingest.title')}</h2>
+				<p>{t('pipeline.ingest.subtitle')}</p>
 			</div>
-			<span class="panel-total">{creditEstimate.familyCount} families</span>
+			<span class="panel-total">{t(`pipeline.granularity.${config.granularity}` as const)}</span>
 		</div>
 
 		<div class="control-group">
 			<div class="control-row">
 				<div>
-					<label for="rfq-upload">Import RFQ workbook or report JSON</label>
-					<small>Supports .xlsx, .csv (products sheet) or final_recommendations.json</small>
+					<label for="rfq-upload">{t('pipeline.import.label')}</label>
+					<small>{t('pipeline.import.hint')}</small>
 				</div>
-				<label class="export-button secondary" style="cursor:pointer;">
+				<Button variant="secondary" onclick={() => fileInput?.click()}>
 					<Icon name="upload" size={14} />
-					Choose file
-					<input
-						id="rfq-upload"
-						type="file"
-						accept=".xlsx,.xls,.csv,.json"
-						style="display:none;"
-						onchange={handleFileInput}
-					/>
-				</label>
-			</div>
-
-			<div class="control-row">
-				<div>
-					<label for="granularity-group">Clustering granularity</label>
-					<small>Controls two-stage agglomerative threshold (fine / balanced / broad)</small>
-				</div>
-				<div class="granularity-pills" id="granularity-group">
-					{#each ['fine', 'balanced', 'broad'] as mode (mode)}
-						<button
-							type="button"
-							class:active={config.granularity === mode}
-							onclick={() => onGranularityChange(mode as Granularity)}
-						>
-							{mode}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<div class="control-row">
-				<div>
-					<label for="stealth-toggle">ScrapingBee Stealth Proxy (--stealth)</label>
-					<small>Premium: 30 credits/page · Stealth: 80 credits/page</small>
-				</div>
+					{t('pipeline.import.button')}
+				</Button>
 				<input
-					id="stealth-toggle"
-					type="checkbox"
-					bind:checked={config.stealthProxy}
+					id="rfq-upload"
+					bind:this={fileInput}
+					type="file"
+					accept=".xlsx,.xls,.csv,.json"
+					class="sr-only"
+					onchange={handleFileInput}
 				/>
 			</div>
 
 			<div class="control-row">
 				<div>
-					<label for="pages-input">Pages per family (-p)</label>
-					<small>Organic listings extracted per page: max {config.maxProductsPerPage}</small>
+					<span class="control-label" id="granularity-label">{t('pipeline.granularity.label')}</span>
+					<small>{t('pipeline.granularity.hint')}</small>
+				</div>
+				<SegmentedControl
+					size="sm"
+					label={t('pipeline.granularity.label')}
+					value={config.granularity}
+					onchange={onGranularityChange}
+					options={[
+						{ value: 'fine', label: t('pipeline.granularity.fine') },
+						{ value: 'balanced', label: t('pipeline.granularity.balanced') },
+						{ value: 'broad', label: t('pipeline.granularity.broad') }
+					]}
+				/>
+			</div>
+
+			<div class="control-row">
+				<div>
+					<label for="pages-input">{t('pipeline.perFamily.label')}</label>
+					<small>{t('pipeline.perFamily.hint', { max: config.maxProductsPerPage })}</small>
 				</div>
 				<input
 					id="pages-input"
@@ -141,104 +118,87 @@
 					style="width:70px;"
 				/>
 			</div>
-
-			<div class="control-row">
-				<div>
-					<label for="cache-toggle">Offline cache mode (--from-cache)</label>
-					<small>Re-score indefinitely at 0 credits using family_scrape_cache.json</small>
-				</div>
-				<input
-					id="cache-toggle"
-					type="checkbox"
-					bind:checked={config.fromCache}
-				/>
-			</div>
 		</div>
 
-		<div class="panel-heading" style="margin-top:16px;margin-bottom:8px;">
-			<div>
-				<h2>Equivalent CLI command</h2>
-				<p>Mirrors main.py flags for reproducible terminal runs</p>
-			</div>
-		</div>
-		<pre class="cli-preview">{cliCommand}</pre>
-
-		<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-			<Button onclick={onRecalculate} disabled={isBusy}>
-				<Icon name="play" size={14} />
-				Re-score offline (0 credits)
+		<div class="action-row">
+			<Button onclick={onValidate} disabled={isBusy}>
+				<Icon name="filter" size={14} />
+				{t('pipeline.validate')}
 			</Button>
-			<Button variant="secondary" onclick={onRunLiveScrape} disabled={isBusy || config.fromCache}>
-				<Icon name="zap" size={14} />
-				Run live ScrapingBee scrape ({creditEstimate.estimatedCredits} cr)
+			<Button variant="secondary" onclick={onCompare} disabled={isBusy}>
+				<Icon name="truck" size={14} />
+				{t('pipeline.compare')}
 			</Button>
-			<Button variant="secondary" onclick={onResetSample} disabled={isBusy}>
+			<Button variant="secondary" onclick={onGenerateRfq} disabled={isBusy}>
+				<Icon name="file-spreadsheet" size={14} />
+				{t('pipeline.rfq')}
+			</Button>
+			<Button variant="ghost" onclick={onResetSample} disabled={isBusy}>
 				<Icon name="rotate-ccw" size={14} />
-				Reset sample
+				{t('pipeline.reset')}
 			</Button>
 		</div>
 
-		{#if statusMessage}
-			<div class="detail-alert" style="margin-top:12px;">
-				<Icon name="sparkles" size={15} />
-				<span>{statusMessage}</span>
-			</div>
+		{#if status}
+			<Alert tone="warn" icon="sparkles" class="status-alert">
+				{t(status.key, status.params)}
+			</Alert>
 		{/if}
-	</article>
+	</Card>
 
-	<article class="panel">
+	<Card variant="panel">
 		<div class="panel-heading">
 			<div>
-				<h2>Hard filters &amp; weighted scoring</h2>
-				<p>Separate mandatory disqualifiers from 0–100 weighted ranking</p>
+				<h2>{t('pipeline.filters.title')}</h2>
+				<p>{t('pipeline.filters.subtitle')}</p>
 			</div>
-			<span class="panel-total">{disqualifiedCount} disqualified</span>
+			<span class="panel-total">{tn('pipeline.filters.disqualified', disqualifiedCount)}</span>
 		</div>
 
 		<div class="control-group">
 			<div class="control-row">
 				<div>
-					<label for="ta-filter">Require Trade Assurance</label>
-					<small>Disqualify suppliers without Alibaba Trade Assurance</small>
+					<label for="ta-filter">{t('pipeline.ta.label')}</label>
+					<small>{t('pipeline.ta.hint')}</small>
 				</div>
 				<input
 					id="ta-filter"
 					type="checkbox"
 					bind:checked={config.filters.requireTradeAssurance}
-					onchange={onRecalculate}
+					onchange={onValidate}
 				/>
 			</div>
 
 			<div class="control-row">
 				<div>
-					<label for="moq-filter">Strict MOQ (--strict-moq)</label>
-					<small>Disqualify listings with unconfirmed MOQ or MOQ &gt; target qty</small>
+					<label for="moq-filter">{t('pipeline.moq.label')}</label>
+					<small>{t('pipeline.moq.hint')}</small>
 				</div>
 				<input
 					id="moq-filter"
 					type="checkbox"
 					bind:checked={config.filters.strictMoq}
-					onchange={onRecalculate}
+					onchange={onValidate}
 				/>
 			</div>
 
 			<div class="control-row">
 				<div>
-					<label for="min-price-filter">Strict Min Price Floor</label>
-					<small>Disqualify listings priced below client min price instead of soft penalty</small>
+					<label for="min-price-filter">{t('pipeline.minPrice.label')}</label>
+					<small>{t('pipeline.minPrice.hint')}</small>
 				</div>
 				<input
 					id="min-price-filter"
 					type="checkbox"
 					bind:checked={config.filters.strictMinPrice}
-					onchange={onRecalculate}
+					onchange={onValidate}
 				/>
 			</div>
 
 			<div class="control-row">
 				<div>
-					<label for="years-filter">Minimum years active</label>
-					<small>--min-years threshold (0 = no filter)</small>
+					<label for="years-filter">{t('pipeline.years.label')}</label>
+					<small>{t('pipeline.years.hint')}</small>
 				</div>
 				<input
 					id="years-filter"
@@ -246,15 +206,15 @@
 					min="0"
 					max="20"
 					bind:value={config.filters.minYears}
-					onchange={onRecalculate}
+					onchange={onValidate}
 					style="width:70px;"
 				/>
 			</div>
 
 			<div class="control-row">
 				<div>
-					<label for="certs-filter">Required certifications</label>
-					<small>Comma-separated (e.g. CE, ISO9001, RoHS)</small>
+					<label for="certs-filter">{t('pipeline.certs.label')}</label>
+					<small>{t('pipeline.certs.hint')}</small>
 				</div>
 				<input
 					id="certs-filter"
@@ -263,75 +223,46 @@
 					value={certsInput}
 					onchange={(e) => {
 						handleCertsChange(e.currentTarget.value);
-						onRecalculate();
+						onValidate();
 					}}
 					style="width:140px;"
 				/>
 			</div>
 		</div>
 
-		<div class="panel-heading" style="margin-top:14px;margin-bottom:8px;">
+		<div class="panel-heading weights-heading">
 			<div>
-				<h2>Scoring weights (0–100)</h2>
-				<p>Vendor Score ({config.weights.vendorScore}%) + RFQ Fit ({config.weights.rfqFit}%)</p>
+				<h2>{t('pipeline.weights.title')}</h2>
+				<p>
+					{t('pipeline.weights.subtitle', {
+						vendor: config.weights.vendorScore,
+						rfq: config.weights.rfqFit
+					})}
+				</p>
 			</div>
 		</div>
 
 		<div class="control-group">
 			<div class="control-row">
-				<label for="w-price">Price competitiveness ({config.weights.price}%)</label>
-				<input id="w-price" type="range" min="0" max="60" bind:value={config.weights.price} onchange={onRecalculate} />
+				<label for="w-price">{t('pipeline.weight.price', { value: config.weights.price })}</label>
+				<input id="w-price" type="range" min="0" max="60" bind:value={config.weights.price} onchange={onValidate} />
 			</div>
 			<div class="control-row">
-				<label for="w-moq">MOQ fit ({config.weights.moq}%)</label>
-				<input id="w-moq" type="range" min="0" max="50" bind:value={config.weights.moq} onchange={onRecalculate} />
+				<label for="w-moq">{t('pipeline.weight.moq', { value: config.weights.moq })}</label>
+				<input id="w-moq" type="range" min="0" max="50" bind:value={config.weights.moq} onchange={onValidate} />
 			</div>
 			<div class="control-row">
-				<label for="w-ta">Trade Assurance ({config.weights.tradeAssurance}%)</label>
-				<input id="w-ta" type="range" min="0" max="50" bind:value={config.weights.tradeAssurance} onchange={onRecalculate} />
+				<label for="w-ta">{t('pipeline.weight.ta', { value: config.weights.tradeAssurance })}</label>
+				<input id="w-ta" type="range" min="0" max="50" bind:value={config.weights.tradeAssurance} onchange={onValidate} />
 			</div>
 			<div class="control-row">
-				<label for="w-years">Years active ({config.weights.years}%)</label>
-				<input id="w-years" type="range" min="0" max="40" bind:value={config.weights.years} onchange={onRecalculate} />
+				<label for="w-years">{t('pipeline.weight.years', { value: config.weights.years })}</label>
+				<input id="w-years" type="range" min="0" max="40" bind:value={config.weights.years} onchange={onValidate} />
 			</div>
 			<div class="control-row">
-				<label for="w-certs">Certifications ({config.weights.certs}%)</label>
-				<input id="w-certs" type="range" min="0" max="40" bind:value={config.weights.certs} onchange={onRecalculate} />
+				<label for="w-certs">{t('pipeline.weight.certs', { value: config.weights.certs })}</label>
+				<input id="w-certs" type="range" min="0" max="40" bind:value={config.weights.certs} onchange={onValidate} />
 			</div>
 		</div>
-	</article>
+	</Card>
 </div>
-
-<article class="panel" style="margin-top:14px;">
-	<div class="panel-heading">
-		<div>
-			<h2>Verified 100-item catalog benchmarks</h2>
-			<p>Zero hardcoded category rules · zero LLM tokens · 1 page per family</p>
-		</div>
-		<span class="panel-total">Reference table</span>
-	</div>
-	<div class="table-scroll">
-		<table>
-			<thead>
-				<tr>
-					<th>GRANULARITY</th>
-					<th>FAMILIES GENERATED</th>
-					<th>API CALL REDUCTION</th>
-					<th>EST. CREDITS (PREMIUM)</th>
-					<th>EST. CREDITS (STEALTH)</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each CATALOG_100_BENCHMARKS as row (row.label)}
-					<tr>
-						<td style="color:var(--card-foreground);font-weight:600;">{row.label}</td>
-						<td>{row.families}</td>
-						<td>{row.reductionPct > 0 ? `-${row.reductionPct}%` : '0%'}</td>
-						<td class="price-cell">{row.premiumCredits.toLocaleString()}</td>
-						<td class="price-cell">{row.stealthCredits.toLocaleString()}</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-</article>
