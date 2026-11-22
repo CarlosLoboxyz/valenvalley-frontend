@@ -1,7 +1,20 @@
+import type { FlagMessage } from '$lib/domain/flags';
+import type { MessageKey, Params } from '$lib/i18n';
+
 export type Granularity = 'fine' | 'balanced' | 'broad';
 export type RecommendationTier = 'Strong Recommend' | 'Consider' | 'Caution' | 'Disqualified';
 export type DashboardTab = 'overview' | 'graphs' | 'pipeline';
-export type ScoreFilter = 'All scores' | 'Strong Recommend (75+)' | 'Consider (55+)' | 'Score 50+' | 'Needs review';
+/** Códigos de filtro: la interfaz los muestra traducidos, la lógica solo compara códigos. */
+export type ScoreFilter = 'all' | 'strong' | 'consider' | 'score50' | 'review';
+
+/** Valor centinela de los filtros de familia y proveedor («todas»). */
+export const ALL_FILTER = 'all';
+
+/** Mensaje de estado estructurado: se traduce en la vista, no en el store. */
+export interface StatusMessage {
+	key: MessageKey;
+	params?: Params;
+}
 
 export interface RfqItem {
 	position: number;
@@ -62,9 +75,9 @@ export interface ScoredVendorOffer {
 	listing: AlibabaListing;
 	tier: RecommendationTier;
 	breakdown: ScoreBreakdown;
-	pros: string[];
-	warnings: string[];
-	disqualificationReasons: string[];
+	pros: FlagMessage[];
+	warnings: FlagMessage[];
+	disqualificationReasons: FlagMessage[];
 	isBaitPrice: boolean;
 	unitMismatch: boolean;
 }
@@ -89,8 +102,8 @@ export interface RecommendationItem {
 	issues: number;
 	vendors: number;
 	breakdown: ScoreBreakdown;
-	pros: string[];
-	warnings: string[];
+	pros: FlagMessage[];
+	warnings: FlagMessage[];
 	alternatives: ScoredVendorOffer[];
 	disqualifiedCount: number;
 	listingUrl: string;
@@ -109,11 +122,11 @@ export interface CrossItemVendor {
 }
 
 export interface QualitySignal {
-	id: string;
-	title: string;
-	detail: string;
+	id: 'moq' | 'brand' | 'price' | 'tenure';
 	severity: 'HIGH' | 'CHECK';
+	/** Ofertas afectadas y total evaluado; la vista arma el texto con estos números. */
 	count: number;
+	total: number;
 }
 
 export interface PipelineWeights {
@@ -180,7 +193,7 @@ export interface SourcingReport {
 		position: number;
 		product: string;
 		supplier: string;
-		reasons: string[];
+		reasons: FlagMessage[];
 	}>;
 	crossItemVendors: CrossItemVendor[];
 	creditEstimate: CreditEstimate;

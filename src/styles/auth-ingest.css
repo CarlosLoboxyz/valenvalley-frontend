@@ -1,0 +1,300 @@
+/*
+ * Pantallas de acceso e ingesta de materiales (/login, /materiales).
+ * Reutiliza el kit (btn, field, input, card, alert); aquí solo vive lo propio de estas vistas.
+ */
+
+.auth-page {
+	--radius-control: 10px;
+	--radius-card: 16px;
+	--radius-pill: 6px;
+	--ok: var(--navy);
+
+	position: relative;
+	min-height: 100vh;
+	display: grid;
+	align-items: center;
+	justify-items: center;
+	padding: 56px 20px 40px;
+	background: var(--background);
+	color: var(--foreground);
+	font-family: var(--font-sans);
+}
+
+[data-theme='dark'] .auth-page {
+	--ok: var(--teal);
+}
+
+.auth-toolbar {
+	position: absolute;
+	top: 16px;
+	right: 20px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.auth-card {
+	width: min(480px, 100%);
+	padding: 40px 36px;
+	box-shadow: var(--shadow-auth);
+}
+
+.auth-card--wide {
+	width: min(760px, 100%);
+}
+
+.auth-brand {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 8px;
+}
+
+.auth-title {
+	margin: 0 0 6px;
+	font-size: 28px;
+	font-weight: 600;
+	letter-spacing: -0.6px;
+	line-height: 1.2;
+	color: var(--heading);
+}
+
+.auth-subtitle {
+	margin: 0 0 28px;
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--muted-foreground);
+}
+
+.auth-form {
+	display: grid;
+	gap: 18px;
+}
+
+.auth-foot {
+	margin: 20px 0 0;
+	text-align: center;
+	font-size: 12px;
+	color: var(--muted-foreground);
+}
+
+.auth-foot a {
+	color: var(--link);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.auth-foot a:hover {
+	color: var(--orange);
+	text-decoration: underline;
+}
+
+.separator {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 28px 0 20px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+
+.separator::before,
+.separator::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--border);
+}
+
+/* Dropzone */
+.dropzone {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 160px;
+	padding: 24px;
+	text-align: center;
+	cursor: pointer;
+	background: var(--surface-muted);
+	border: 2px dashed var(--border-strong);
+	border-radius: 14px;
+}
+
+.dropzone:hover,
+.dropzone.is-dragging {
+	border-color: var(--orange);
+	background: var(--surface-hover);
+}
+
+.dropzone__title {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--heading);
+}
+
+.dropzone__hint {
+	font-size: 12px;
+	color: var(--muted-foreground);
+}
+
+/* Reporte de ingesta (filas válidas vs. errores auditables) */
+.ingest-report {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin-top: 14px;
+}
+
+.ingest-report__card {
+	padding: 14px 16px;
+	box-shadow: none;
+}
+
+.ingest-report__card h3 {
+	margin: 0 0 6px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--heading);
+}
+
+.ingest-report__count {
+	margin: 0 0 8px;
+	font-size: 26px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.ingest-report__count.is-ok {
+	color: var(--ok);
+}
+
+.ingest-report__count.is-bad {
+	color: var(--danger);
+}
+
+.ingest-report__note {
+	margin: 0;
+	font-size: 12px;
+	color: var(--muted-foreground);
+}
+
+.ingest-report__list {
+	max-height: 220px;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+	font-size: 12px;
+	color: var(--muted-foreground);
+}
+
+.ingest-report__list li {
+	padding: 6px 0;
+	line-height: 1.4;
+	border-top: 1px solid var(--border);
+}
+
+.ingest-report__list li:first-child {
+	border-top: 0;
+}
+
+.row-chip {
+	display: inline-block;
+	margin-right: 5px;
+	padding: 1px 7px;
+	font-weight: 500;
+	color: var(--heading);
+	background: var(--surface-muted);
+	border-radius: var(--radius-pill);
+}
+
+/* Entrada manual */
+.manual-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 220px auto;
+	gap: 10px;
+	align-items: end;
+}
+
+.manual-row .btn {
+	height: 48px;
+}
+
+.manual-error {
+	margin-top: 12px;
+}
+
+/* Lista de materiales */
+.material-list {
+	display: grid;
+	gap: 8px;
+	margin: 20px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.material-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 11px 14px;
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-control);
+}
+
+.material-item:hover {
+	border-color: var(--navy);
+	background: var(--surface-muted);
+}
+
+[data-theme='dark'] .material-item:hover {
+	border-color: var(--orange);
+	background: var(--surface-hover);
+}
+
+.material-item__name {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--foreground);
+}
+
+.material-item__qty {
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	color: var(--muted-foreground);
+}
+
+.material-item__qty b {
+	font-weight: 600;
+	color: var(--heading);
+}
+
+.material-empty {
+	margin: 16px 0 0;
+	padding: 18px;
+	text-align: center;
+	font-size: 13px;
+	color: var(--muted-foreground);
+	border: 1px dashed var(--border-strong);
+	border-radius: var(--radius-control);
+}
+
+.cta-row {
+	margin-top: 24px;
+}
+
+@media (max-width: 640px) {
+	.auth-card {
+		padding: 32px 22px;
+	}
+	.ingest-report,
+	.manual-row {
+		grid-template-columns: 1fr;
+	}
+}

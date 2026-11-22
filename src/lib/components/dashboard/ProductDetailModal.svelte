@@ -1,8 +1,12 @@
 <script lang="ts">
+	import Alert from '$lib/components/ui/Alert.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import { hasNoSupplier } from '$lib/domain/labels';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
 	import type { RecommendationItem } from '$lib/types/sourcing';
-	import { formatScore, padPosition } from '$lib/utils/format';
+	import { padPosition, tierTone } from '$lib/utils/format';
 
 	interface Props {
 		item: RecommendationItem | null;
@@ -11,8 +15,14 @@
 
 	let { item, onClose }: Props = $props();
 
+	const { t, tn, n, score, qty, budget, moq, price, tier, flag } = usePreferences();
+
 	function handleWindowKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && item) onClose();
+	}
+
+	function handleBackdropClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) onClose();
 	}
 </script>
 
@@ -21,88 +31,98 @@
 {#if item}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={onClose}>
-		<section
-			class="detail-modal"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="detail-title"
-			onclick={(e) => e.stopPropagation()}
-		>
-			<button type="button" class="modal-close" onclick={onClose} aria-label="Close details">
-				×
-			</button>
+	<div class="modal-backdrop" onclick={handleBackdropClick}>
+		<div class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+			<IconButton
+				icon="x"
+				label={t('modal.close')}
+				class="modal-close"
+				onclick={onClose}
+			/>
 
 			<div class="eyebrow">
-				PRODUCT #{padPosition(item.pos)} · {item.family} ({item.familyName})
+				{t('modal.eyebrow', {
+					pos: padPosition(item.pos),
+					family: item.family,
+					familyName: item.familyName
+				})}
 			</div>
 			<h2 id="detail-title">{item.product}</h2>
-			<p class="subtitle">Blended Vendor Score (75%) + RFQ Fit (25%) detail</p>
+			<p class="subtitle">{t('modal.subtitle')}</p>
 
 			<div class="detail-score">
-				<span>Match score</span>
-				<b>{formatScore(item.score)}<small>/100</small></b>
-				<em>{item.tier}</em>
+				<span>{t('modal.matchScore')}</span>
+				<b>{score(item.score)}<small>/100</small></b>
+				<Badge tone={tierTone(item.tier)} size="lg">{tier(item.tier)}</Badge>
 			</div>
 
 			<div class="score-breakdown">
 				<div class="breakdown-cell">
-					<small>Price</small>
-					<b>{item.breakdown.price}</b>
+					<small>{t('modal.breakdown.price')}</small>
+					<b>{n(item.breakdown.price)}</b>
 				</div>
 				<div class="breakdown-cell">
-					<small>MOQ Fit</small>
-					<b>{item.breakdown.moqFit}</b>
+					<small>{t('modal.breakdown.moq')}</small>
+					<b>{n(item.breakdown.moqFit)}</b>
 				</div>
 				<div class="breakdown-cell">
-					<small>Trade Assur.</small>
-					<b>{item.breakdown.tradeAssurance}</b>
+					<small>{t('modal.breakdown.ta')}</small>
+					<b>{n(item.breakdown.tradeAssurance)}</b>
 				</div>
 				<div class="breakdown-cell">
-					<small>Years</small>
-					<b>{item.breakdown.yearsActive}</b>
+					<small>{t('modal.breakdown.years')}</small>
+					<b>{n(item.breakdown.yearsActive)}</b>
 				</div>
 				<div class="breakdown-cell">
-					<small>RFQ Fit</small>
-					<b>{item.breakdown.rfqFitScore}</b>
+					<small>{t('modal.breakdown.rfq')}</small>
+					<b>{n(item.breakdown.rfqFitScore)}</b>
 				</div>
 			</div>
 
 			<div class="detail-line">
-				<span>Recommended supplier</span>
-				<b>{item.supplier}</b>
+				<span>{t('modal.line.supplier')}</span>
+				<b>{hasNoSupplier(item.supplier) ? t('common.noQualifyingSupplier') : item.supplier}</b>
 			</div>
 			<div class="detail-line">
-				<span>Other qualified listings</span>
-				<b>{item.vendors > 1 ? `${item.vendors - 1} alternatives` : 'None listed'}</b>
-			</div>
-			<div class="detail-line">
-				<span>Listing price</span>
-				<b>{item.price}</b>
-			</div>
-			<div class="detail-line">
-				<span>Target budget</span>
-				<b>{item.budget}</b>
-			</div>
-			<div class="detail-line">
-				<span>Quantity requested · MOQ</span>
-				<b>{item.qty} · MOQ {item.moqLabel}</b>
-			</div>
-			<div class="detail-line">
-				<span>Tenure · Certifications</span>
+				<span>{t('modal.line.others')}</span>
 				<b>
-					{item.yearsActive !== null ? `${item.yearsActive} yrs` : 'Unknown'} · {item.certifications.length > 0 ? item.certifications.join(', ') : 'None listed'}
+					{item.vendors > 1 ? tn('modal.line.others', item.vendors - 1) : t('modal.line.none')}
+				</b>
+			</div>
+			<div class="detail-line">
+				<span>{t('modal.line.price')}</span>
+				<b>{price(item.price)}</b>
+			</div>
+			<div class="detail-line">
+				<span>{t('modal.line.budget')}</span>
+				<b>{budget(item.minPrice, item.maxPrice)}</b>
+			</div>
+			<div class="detail-line">
+				<span>{t('modal.line.qtyMoq')}</span>
+				<b>
+					{t('modal.line.qtyMoqValue', {
+						qty: qty(item.qtyNumeric, item.unit),
+						moq: moq(item.moqLabel)
+					})}
+				</b>
+			</div>
+			<div class="detail-line">
+				<span>{t('modal.line.tenureCerts')}</span>
+				<b>
+					{item.yearsActive !== null ? tn('common.years', item.yearsActive) : t('common.unknown')} ·
+					{item.certifications.length > 0
+						? item.certifications.join(', ')
+						: t('common.noneListed')}
 				</b>
 			</div>
 
 			{#if item.warnings.length > 0}
-				<div class="detail-alert">
-					<Icon name="shield-alert" size={17} />
-					<span>{item.warnings.join(' · ')}</span>
-				</div>
+				<Alert tone="warn" icon="shield-alert" class="detail-alert">
+					{item.warnings.map(flag).join(' · ')}
+				</Alert>
 			{/if}
 
-			<Button class="modal-action" onclick={onClose}>Done</Button>
-		</section>
+			<Button class="modal-action" block onclick={onClose}>{t('common.done')}</Button>
+		</div>
 	</div>
 {/if}

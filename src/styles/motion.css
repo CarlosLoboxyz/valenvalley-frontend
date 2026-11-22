@@ -1,0 +1,92 @@
+/*
+ * Movimiento: transiciones suaves y hovers marcados en todo elemento interactivo.
+ * Equivale a `transition-all duration-150` de Tailwind, centralizado en un solo lugar.
+ */
+
+.nav-item,
+.btn,
+.icon-btn,
+.segmented__item,
+.badge,
+.card,
+.input,
+.search-box,
+.filter-box,
+.pagination-controls select,
+.pagination-controls button,
+.control-row,
+.insight-banner button,
+tbody tr,
+tbody tr td,
+.vendor-row,
+.quality-row,
+.family-row,
+.product-accordion,
+.product-name,
+.material-item,
+.dropzone,
+.help-card button,
+.score-bar,
+.score-bar-column {
+	transition: all 0.15s ease;
+}
+
+/* Filas de tabla y lista */
+tbody tr:not(.expanded-detail-row):hover td:first-child {
+	box-shadow: inset 3px 0 0 var(--orange);
+}
+
+.vendor-row:hover {
+	background: var(--surface-hover);
+}
+
+.quality-row:hover {
+	background: var(--surface-hover);
+}
+
+.family-row:hover .family-name {
+	color: var(--foreground);
+}
+
+.product-accordion:hover .product-name {
+	color: var(--orange);
+}
+
+.score-bar-column:hover .score-bar {
+	filter: brightness(1.12);
+	transform: scaleX(1.18);
+}
+
+/* Inputs y controles */
+.control-row:hover {
+	border-color: var(--border-strong);
+	background: var(--surface-hover);
+}
+
+.search-box:hover,
+.filter-box:hover {
+	border-color: var(--border-strong);
+}
+
+.search-box:focus-within,
+.filter-box:focus-within {
+	border-color: var(--focus);
+	box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.pagination-controls button:hover:not(:disabled),
+.pagination-controls select:hover {
+	border-color: var(--orange);
+	color: var(--orange);
+}
+
+.insight-banner button:hover {
+	color: var(--orange);
+}
+
+/* Preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition-duration: 0.01ms !important;
+	}
+}

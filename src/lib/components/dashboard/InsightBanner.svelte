@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
 
 	interface Props {
 		totalCount: number;
@@ -8,6 +9,8 @@
 	}
 
 	let { totalCount, cautionCount, onReviewFlagged }: Props = $props();
+
+	const { t } = usePreferences();
 </script>
 
 <div class="insight-banner" id="insights">
@@ -17,15 +20,12 @@
 	<div class="insight-copy">
 		<b>
 			{cautionCount === totalCount
-				? 'Every recommendation needs a closer look'
-				: `${cautionCount} of ${totalCount} recommendations need a closer look`}
+				? t('insight.all')
+				: t('insight.some', { count: cautionCount, total: totalCount })}
 		</b>
-		<p>
-			{cautionCount} top-ranked listings are marked “Caution” or “Disqualified.” Confirm MOQ,
-			supplier tenure, brand, and product specifications before placing orders.
-		</p>
+		<p>{t('insight.body', { count: cautionCount })}</p>
 	</div>
 	<button type="button" onclick={onReviewFlagged}>
-		Review flagged items <Icon name="arrow-down-right" size={15} />
+		{t('insight.cta')} <Icon name="arrow-down-right" size={15} />
 	</button>
 </div>

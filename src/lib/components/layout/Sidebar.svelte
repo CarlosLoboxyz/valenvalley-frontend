@@ -1,5 +1,9 @@
 <script lang="ts">
-	import Icon from '$lib/components/ui/Icon.svelte';
+	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
+	import Icon, { type IconName } from '$lib/components/ui/Icon.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import type { MessageKey } from '$lib/i18n';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
 	import type { DashboardTab } from '$lib/types/sourcing';
 
 	interface Props {
@@ -10,6 +14,30 @@
 	}
 
 	let { activeTab, productCount, onSelectTab, onScrollToSection }: Props = $props();
+
+	const { t } = usePreferences();
+
+	interface NavItem {
+		label: MessageKey;
+		icon: IconName;
+		tab: DashboardTab;
+		/** Sección a la que se desplaza tras abrir la pestaña (no marca la pestaña como activa). */
+		scrollTo?: string;
+		count?: boolean;
+	}
+
+	const items: NavItem[] = [
+		{ label: 'nav.overview', icon: 'layout-dashboard', tab: 'overview' },
+		{ label: 'nav.products', icon: 'shopping-bag', tab: 'overview', scrollTo: 'products', count: true },
+		{ label: 'nav.suppliers', icon: 'truck', tab: 'overview', scrollTo: 'suppliers' },
+		{ label: 'nav.graphs', icon: 'zap', tab: 'graphs' },
+		{ label: 'nav.pipeline', icon: 'sliders', tab: 'pipeline' }
+	];
+
+	function select(item: NavItem) {
+		onSelectTab(item.tab);
+		if (item.scrollTo) onScrollToSection(item.scrollTo);
+	}
 </script>
 
 <aside class="sidebar">
@@ -21,64 +49,23 @@
 			onSelectTab('overview');
 		}}
 	>
-		<span class="brand-mark">
-			<Icon name="shopping-bag" size={19} />
-		</span>
-		<span>source<span class="brand-light">wise</span></span>
+		<BrandLogo size={30} variant="on-dark" />
 	</a>
 
-	<div class="workspace-label">WORKSPACE</div>
-	<nav class="nav" aria-label="Workspace navigation">
-		<button
-			type="button"
-			class="nav-item"
-			class:active={activeTab === 'overview'}
-			onclick={() => onSelectTab('overview')}
-		>
-			<Icon name="layout-dashboard" size={17} />
-			Overview
-		</button>
-		<button
-			type="button"
-			class="nav-item"
-			onclick={() => {
-				onSelectTab('overview');
-				onScrollToSection('products');
-			}}
-		>
-			<Icon name="shopping-bag" size={17} />
-			Product sourcing
-			<span class="nav-count">{productCount}</span>
-		</button>
-		<button
-			type="button"
-			class="nav-item"
-			onclick={() => {
-				onSelectTab('overview');
-				onScrollToSection('suppliers');
-			}}
-		>
-			<Icon name="truck" size={17} />
-			Suppliers
-		</button>
-		<button
-			type="button"
-			class="nav-item"
-			class:active={activeTab === 'graphs'}
-			onclick={() => onSelectTab('graphs')}
-		>
-			<Icon name="zap" size={17} />
-			Sourcing graphs
-		</button>
-		<button
-			type="button"
-			class="nav-item"
-			class:active={activeTab === 'pipeline'}
-			onclick={() => onSelectTab('pipeline')}
-		>
-			<Icon name="sliders" size={17} />
-			Pipeline &amp; scoring
-		</button>
+	<div class="workspace-label">{t('nav.workspace')}</div>
+	<nav class="nav" aria-label={t('nav.aria')}>
+		{#each items as item (item.label)}
+			<button
+				type="button"
+				class="nav-item"
+				class:active={!item.scrollTo && activeTab === item.tab}
+				onclick={() => select(item)}
+			>
+				<Icon name={item.icon} size={17} />
+				{t(item.label)}
+				{#if item.count}<span class="nav-count">{productCount}</span>{/if}
+			</button>
+		{/each}
 	</nav>
 
 	<div class="side-bottom">
@@ -86,26 +73,24 @@
 			<div class="help-icon">
 				<Icon name="circle-help" size={17} />
 			</div>
-			<b>Need a hand?</b>
-			<p>Learn how to read your sourcing report or tune offline scoring weights.</p>
+			<b>{t('help.title')}</b>
+			<p>{t('help.body')}</p>
 			<button type="button" onclick={() => onSelectTab('pipeline')}>
-				Open scoring controls <Icon name="external-link" size={12} />
+				{t('help.cta')} <Icon name="external-link" size={12} />
 			</button>
 		</div>
 		<div class="profile">
 			<div class="avatar">JD</div>
 			<div>
 				<b>Jordan Davis</b>
-				<small>Procurement team</small>
+				<small>{t('profile.role')}</small>
 			</div>
-			<button
-				type="button"
-				class="profile-settings"
-				aria-label="Pipeline settings"
+			<IconButton
+				icon="settings"
+				tone="sidebar"
+				label={t('profile.settings')}
 				onclick={() => onSelectTab('pipeline')}
-			>
-				<Icon name="settings" size={17} />
-			</button>
+			/>
 		</div>
 	</div>
 </aside>

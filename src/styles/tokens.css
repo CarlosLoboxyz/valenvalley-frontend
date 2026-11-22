@@ -1,0 +1,198 @@
+/*
+ * Tokens de diseño de CuadraMás.
+ *
+ * 1. Paleta oficial (AGENTS.md) como utilidades de Tailwind (@theme) y variables planas.
+ * 2. Tokens semánticos del tema claro (por defecto).
+ * 3. Tokens semánticos del tema oscuro: [data-theme='dark'], derivado de la paleta oficial.
+ *
+ * Los componentes consumen SIEMPRE los tokens semánticos (--card, --border, --tone-*, ...),
+ * nunca un hex suelto, de modo que cambiar de tema solo reasigna variables.
+ */
+@theme {
+	--font-sans: 'Poppins', sans-serif;
+	--color-navy: #273270;
+	--color-navy-dark: #091242;
+	--color-navy-deep: #111c55;
+	--color-yellow: #ffd550;
+	--color-orange: #fe6703;
+	--color-gray: #666c89;
+	--color-gray-light: #f4f4f4;
+	--color-ink-dark: #1c1f35;
+}
+
+:root {
+	/* ── Paleta oficial ─────────────────────────────────────────────── */
+	--font-sans: 'Poppins', sans-serif;
+	--navy: #273270;
+	--navy-dark: #091242;
+	--navy-deep: #111c55;
+	--yellow: #ffd550;
+	--orange: #fe6703;
+	--gray: #666c89;
+	--gray-light: #f4f4f4;
+	--ink-dark: #1c1f35;
+	--white: #ffffff;
+
+	/*
+	 * Acento secundario SOLO del tema oscuro: el teal del diseño anterior, conservado
+	 * por decisión del equipo (excepción aprobada a la paleta de AGENTS.md).
+	 */
+	--teal: #67aeb8;
+	--teal-soft: rgba(103, 174, 184, 0.18);
+
+	/* ── Geometría: el dashboard es recto; auth/ingesta lo redondea (ver .auth-page) ── */
+	--radius-control: 0px;
+	--radius-card: 0px;
+	--radius-pill: 0px;
+
+	/* ── Tema claro (por defecto) ───────────────────────────────────── */
+	color-scheme: light;
+
+	--background: var(--gray-light);
+	--foreground: var(--ink-dark);
+	--card: var(--white);
+	--card-foreground: var(--ink-dark);
+	--surface-muted: var(--gray-light);
+	--surface-hover: var(--gray-light);
+	--muted: var(--gray-light);
+	--muted-foreground: var(--gray);
+	--heading: var(--navy);
+	--link: var(--navy);
+	--logo-name: var(--navy-dark);
+	--logo-tile-stroke: transparent;
+
+	--primary: var(--orange);
+	--primary-foreground: var(--white);
+	--secondary: var(--navy);
+	--secondary-foreground: var(--white);
+	--accent: var(--navy-deep);
+	--accent-foreground: var(--white);
+
+	--border: rgba(102, 108, 137, 0.26);
+	--border-strong: rgba(102, 108, 137, 0.45);
+	--input-bg: var(--white);
+	--placeholder: rgba(102, 108, 137, 0.75);
+	--ring: var(--orange);
+	--focus: var(--navy);
+	--focus-ring: rgba(39, 50, 112, 0.18);
+
+	/* Estados funcionales: la paleta no define rojo, se usa solo para errores. */
+	--danger: #b32a2a;
+	--danger-bg: #fdecec;
+	--danger-border: #f3c4c4;
+
+	/* Tonos de badge: warn = amarillo/tinta, good = navy, strong = naranja. */
+	--tone-warn-bg: var(--yellow);
+	--tone-warn-fg: var(--ink-dark);
+	--tone-warn-dot: var(--orange);
+	--tone-good-bg: var(--navy);
+	--tone-good-fg: var(--white);
+	--tone-good-dot: var(--white);
+	--tone-strong-bg: var(--orange);
+	--tone-strong-fg: var(--white);
+	--tone-strong-dot: var(--white);
+	--tone-neutral-bg: var(--gray-light);
+	--tone-neutral-fg: var(--ink-dark);
+	--tone-neutral-dot: var(--gray);
+
+	--btn-navy-bg: var(--navy-dark);
+	--btn-navy-bg-hover: var(--navy-deep);
+
+	--chart-1: var(--orange);
+	--chart-2: var(--navy);
+	--chart-3: var(--yellow);
+	--chart-4: var(--navy-deep);
+	--chart-5: var(--gray);
+	--family-0: var(--orange);
+	--family-1: var(--navy);
+	--family-2: var(--navy-deep);
+	--family-3: var(--yellow);
+	--family-4: var(--gray);
+
+	--sidebar: var(--navy-dark);
+	--sidebar-foreground: var(--gray-light);
+	--sidebar-primary: var(--orange);
+	--sidebar-primary-foreground: var(--white);
+	--sidebar-accent: var(--navy-deep);
+	--sidebar-accent-foreground: var(--white);
+	--sidebar-border: rgba(244, 244, 244, 0.12);
+	--sidebar-ring: var(--yellow);
+	--sidebar-muted: rgba(244, 244, 244, 0.62);
+	--sidebar-hover: rgba(244, 244, 244, 0.08);
+
+	--topbar-bg: var(--navy);
+	--topbar-fg: var(--white);
+	--topbar-muted: rgba(244, 244, 244, 0.75);
+	--topbar-border: rgba(244, 244, 244, 0.1);
+	--topbar-chip-bg: rgba(244, 244, 244, 0.08);
+	--topbar-chip-border: rgba(244, 244, 244, 0.16);
+
+	--shadow-card: 4px 4px 0 rgba(9, 18, 66, 0.14);
+	--shadow-card-hover: 6px 6px 0 rgba(9, 18, 66, 0.16);
+	--shadow-modal: 8px 8px 0 rgba(9, 18, 66, 0.16);
+	--shadow-auth: 0 24px 60px rgba(17, 28, 85, 0.12);
+	--shadow-orange: 0 6px 16px rgba(254, 103, 3, 0.28);
+	--shadow-navy: 0 6px 16px rgba(39, 50, 112, 0.24);
+	--grid-line: rgba(102, 108, 137, 0.18);
+	--overlay: rgba(9, 18, 66, 0.55);
+
+	font-family: var(--font-sans);
+}
+
+/* ── Tema oscuro: navy-dark → navy-deep → navy como escalones de elevación ── */
+[data-theme='dark'] {
+	color-scheme: dark;
+
+	--background: var(--navy-dark);
+	--foreground: var(--gray-light);
+	--card: var(--navy-deep);
+	--card-foreground: var(--gray-light);
+	--surface-muted: var(--navy-dark);
+	--surface-hover: rgba(39, 50, 112, 0.45);
+	--muted: var(--navy-dark);
+	--muted-foreground: rgba(244, 244, 244, 0.66);
+	--heading: var(--gray-light);
+	--link: var(--yellow);
+	--logo-name: var(--gray-light);
+	--logo-tile-stroke: rgba(244, 244, 244, 0.22);
+
+	--accent: var(--navy);
+
+	--border: rgba(244, 244, 244, 0.14);
+	--border-strong: rgba(244, 244, 244, 0.26);
+	--input-bg: var(--navy-dark);
+	--placeholder: rgba(244, 244, 244, 0.42);
+	--focus: var(--orange);
+	--focus-ring: rgba(254, 103, 3, 0.32);
+
+	--danger: #ff9d9d;
+	--danger-bg: rgba(255, 107, 107, 0.14);
+	--danger-border: rgba(255, 107, 107, 0.42);
+
+	--tone-good-bg: var(--teal-soft);
+	--tone-good-fg: var(--teal);
+	--tone-good-dot: var(--teal);
+	--tone-neutral-bg: rgba(244, 244, 244, 0.1);
+	--tone-neutral-fg: var(--gray-light);
+	--tone-neutral-dot: var(--gray-light);
+
+	--btn-navy-bg: var(--navy);
+	--btn-navy-bg-hover: #324291;
+
+	--chart-2: var(--teal);
+	--chart-4: var(--gray-light);
+	--family-1: var(--teal);
+	--family-2: var(--yellow);
+	--family-3: var(--gray-light);
+
+	--topbar-bg: var(--navy-deep);
+	--topbar-border: rgba(244, 244, 244, 0.12);
+
+	--shadow-card: 4px 4px 0 rgba(0, 0, 0, 0.32);
+	--shadow-card-hover: 6px 6px 0 rgba(0, 0, 0, 0.4);
+	--shadow-modal: 8px 8px 0 rgba(0, 0, 0, 0.45);
+	--shadow-auth: 0 24px 60px rgba(0, 0, 0, 0.45);
+	--shadow-navy: 0 6px 16px rgba(0, 0, 0, 0.4);
+	--grid-line: rgba(244, 244, 244, 0.1);
+	--overlay: rgba(4, 8, 33, 0.72);
+}

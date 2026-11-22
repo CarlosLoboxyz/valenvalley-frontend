@@ -1,7 +1,8 @@
 <script lang="ts">
+	import Card from '$lib/components/ui/Card.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { usePreferences } from '$lib/stores/preferences.svelte';
 	import type { RecommendationItem } from '$lib/types/sourcing';
-	import { formatScore } from '$lib/utils/format';
 
 	interface Props {
 		items: RecommendationItem[];
@@ -10,15 +11,17 @@
 	}
 
 	let { items, average, onSelect }: Props = $props();
+
+	const { t, score } = usePreferences();
 </script>
 
-<article class="panel score-panel">
+<Card variant="panel" class="score-panel">
 	<div class="panel-heading">
 		<div>
-			<h2>Recommendation scores</h2>
-			<p>Top listing score per product · out of 100 (click any bar to inspect)</p>
+			<h2>{t('graphs.scores.title')}</h2>
+			<p>{t('graphs.scores.subtitle')}</p>
 		</div>
-		<span class="score-average">AVG <b>{average}</b></span>
+		<span class="score-average">{t('graphs.scores.avg')} <b>{score(Number(average))}</b></span>
 	</div>
 
 	<div class="score-bars">
@@ -26,8 +29,8 @@
 			<button
 				type="button"
 				class="score-bar-column"
-				title={`${item.product}: ${formatScore(item.score)}/100`}
-				aria-label={`${item.product}, score ${formatScore(item.score)}`}
+				title={t('graphs.scores.bar', { product: item.product, score: score(item.score) })}
+				aria-label={t('graphs.scores.barAria', { product: item.product, score: score(item.score) })}
 				onclick={() => onSelect(item)}
 			>
 				<span
@@ -48,9 +51,9 @@
 	</div>
 
 	<div class="chart-caption">
-		<span><i class="legend-dot warn"></i>Caution (&lt;55)</span>
-		<span><i class="legend-dot green-dot"></i>Consider / Strong (55+)</span>
-		<span>Product position</span>
+		<span><i class="legend-dot warn"></i>{t('graphs.scores.legendCaution')}</span>
+		<span><i class="legend-dot green-dot"></i>{t('graphs.scores.legendConsider')}</span>
+		<span>{t('graphs.scores.axis')}</span>
 		<Icon name="shield-alert" size={14} />
 	</div>
-</article>
+</Card>

@@ -1,85 +1,105 @@
 import * as XLSX from 'xlsx';
+import { hasNoSupplier } from '$lib/domain/labels';
+import { formatMoqLabel, tierLabel } from '$lib/i18n/display';
+import { translate, translateFlag, type Locale } from '$lib/i18n';
 import type { SourcingReport } from '$lib/types/sourcing';
 
+/** Los encabezados, nombres de hoja y valores enumerados son SIEMPRE es-VE para que el esquema sea estable. */
+const STABLE_LOCALE: Locale = 'es-VE';
+
 /**
- * Generates the 4-tab client-ready Excel workbook matching `output/final_recommendations.xlsx`:
- * 1. Recommendations
- * 2. Family_Search_Plan
- * 3. Cross_Item_Vendors
- * 4. Disqualified
+ * Genera el libro de 4 hojas para el cliente (equivale a `output/final_recommendations.xlsx`):
+ * 1. Recomendaciones
+ * 2. Plan_Busqueda_Familias
+ * 3. Proveedores_Cruzados
+ * 4. Descalificados
+ *
+ * Contrato de datos: encabezados ASCII en español (snake_case), cantidades y precios como
+ * números. Solo el texto libre (alertas y motivos) sigue el idioma activo de la interfaz.
  */
-export function buildRecommendationsWorkbookBuffer(report: SourcingReport): ArrayBuffer {
+export function buildRecommendationsWorkbookBuffer(
+	report: SourcingReport,
+	locale: Locale = STABLE_LOCALE
+): ArrayBuffer {
 	const wb = XLSX.utils.book_new();
 
-	// Tab 1: Recommendations
+	// Hoja 1: Recomendaciones
 	const recRows = report.recommendations.map((r) => ({
-		Position: r.pos,
-		Family: r.family,
-		Family_Name: r.familyName,
-		Product: r.product,
-		Qty: r.qty,
-		Budget: r.budget,
-		Top_Supplier: r.supplier,
-		Listed_Price: r.price,
-		MOQ: r.moqLabel,
-		Years_Active: r.yearsActive ?? 'Unknown',
-		Trade_Assurance: r.hasTradeAssurance ? 'Yes' : 'No',
-		Certifications: r.certifications.join(', ') || 'None',
-		Vendor_Score: r.breakdown.vendorScore,
-		RFQ_Fit_Score: r.breakdown.rfqFitScore,
-		Final_Score: r.score,
-		Tier: r.tier,
-		Qualified_Vendors: r.vendors,
-		Warnings: r.warnings.join(' | ')
+		Posicion: r.pos,
+		Familia: r.family,
+		Nombre_Familia: r.familyName,
+		Producto: r.product,
+		Cantidad: r.qtyNumeric,
+		Unidad: r.unit,
+		Presupuesto_Min: r.minPrice,
+		Presupuesto_Max: r.maxPrice,
+		Proveedor_Principal: hasNoSupplier(r.supplier)
+			? translate(STABLE_LOCALE, 'common.noQualifyingSupplier')
+			: r.supplier,
+		Precio_Listado: r.price,
+		MOQ: formatMoqLabel(STABLE_LOCALE, r.moqLabel),
+		Anios_Activo: r.yearsActive ?? translate(STABLE_LOCALE, 'common.unknown'),
+		Trade_Assurance: r.hasTradeAssurance ? 'Si' : 'No',
+		Certificaciones: r.certifications.join(', ') || 'Ninguna',
+		Puntaje_Proveedor: r.breakdown.vendorScore,
+		Puntaje_Ajuste_RFQ: r.breakdown.rfqFitScore,
+		Puntaje_Final: r.score,
+		Nivel: tierLabel(STABLE_LOCALE, r.tier),
+		Proveedores_Calificados: r.vendors,
+		Advertencias: r.warnings.map((w) => translateFlag(locale, w)).join(' | ')
 	}));
-	XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recRows), 'Recommendations');
+	XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recRows), 'Recomendaciones');
 
-	// Tab 2: Family_Search_Plan
+	// Hoja 2: Plan_Busqueda_Familias
 	const familyRows = report.families.map((f) => ({
-		Family_ID: f.familyId,
-		Family_Name: f.name,
-		Search_Query: f.searchQuery,
-		Item_Count: f.itemCount,
-		Positions: f.positions.join(', '),
-		Cohesion_Pct: `${f.cohesionScore}%`,
-		Avg_Target_Price: f.avgPrice !== null ? `$${f.avgPrice.toFixed(2)}` : 'N/A'
+		ID_Familia: f.familyId,
+		Nombre_Familia: f.name,
+		Consulta_Busqueda: f.searchQuery,
+		Cantidad_Items: f.itemCount,
+		Posiciones: f.positions.join(', '),
+		Cohesion_Pct: f.cohesionScore,
+		Precio_Objetivo_Prom: f.avgPrice
 	}));
-	XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(familyRows), 'Family_Search_Plan');
+	XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(familyRows), 'Plan_Busqueda_Familias');
 
-	// Tab 3: Cross_Item_Vendors
+	// Hoja 3: Proveedores_Cruzados
 	const vendorRows = report.crossItemVendors.map((v) => ({
-		Supplier: v.supplier,
-		Products_Covered: v.products.length,
-		Families_Covered: v.familiesCovered.join(', '),
-		Average_Score: v.average,
-		Positions: v.products.map((p) => p.pos).join(', ')
+		Proveedor: v.supplier,
+		Productos_Cubiertos: v.products.length,
+		Familias_Cubiertas: v.familiesCovered.join(', '),
+		Puntaje_Promedio: v.average,
+		Posiciones: v.products.map((p) => p.pos).join(', ')
 	}));
 	XLSX.utils.book_append_sheet(
 		wb,
 		XLSX.utils.json_to_sheet(
-			vendorRows.length > 0 ? vendorRows : [{ Note: 'No multi-item consolidation vendors found' }]
+			vendorRows.length > 0
+				? vendorRows
+				: [{ Nota: 'No se encontraron proveedores con varios ítems para consolidar' }]
 		),
-		'Cross_Item_Vendors'
+		'Proveedores_Cruzados'
 	);
 
-	// Tab 4: Disqualified
+	// Hoja 4: Descalificados
 	const disqRows = report.disqualified.map((d) => ({
-		Position: d.position,
-		Product: d.product,
-		Supplier: d.supplier,
-		Disqualification_Reasons: d.reasons.join(' | ')
+		Posicion: d.position,
+		Producto: d.product,
+		Proveedor: d.supplier,
+		Motivos_Descalificacion: d.reasons.map((reason) => translateFlag(locale, reason)).join(' | ')
 	}));
 	XLSX.utils.book_append_sheet(
 		wb,
 		XLSX.utils.json_to_sheet(
-			disqRows.length > 0 ? disqRows : [{ Note: 'No disqualified listings under active filters' }]
+			disqRows.length > 0
+				? disqRows
+				: [{ Nota: 'No hay ofertas descalificadas con los filtros activos' }]
 		),
-		'Disqualified'
+		'Descalificados'
 	);
 
 	const out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer | Uint8Array;
 	return out instanceof Uint8Array
-		? out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength)
+		? (out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer)
 		: out;
 }
 
@@ -94,13 +114,14 @@ export function downloadBlob(blob: Blob, filename: string): void {
 	URL.revokeObjectURL(url);
 }
 
+/** El JSON conserva la estructura completa del reporte (alertas como código + parámetros). */
 export function exportReportAsJson(report: SourcingReport): void {
 	const json = JSON.stringify(report, null, 2);
 	downloadBlob(new Blob([json], { type: 'application/json' }), 'final_recommendations.json');
 }
 
-export function exportReportAsExcel(report: SourcingReport): void {
-	const buffer = buildRecommendationsWorkbookBuffer(report);
+export function exportReportAsExcel(report: SourcingReport, locale: Locale = STABLE_LOCALE): void {
+	const buffer = buildRecommendationsWorkbookBuffer(report, locale);
 	downloadBlob(
 		new Blob([buffer], {
 			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

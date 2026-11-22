@@ -1,4 +1,4 @@
-<script lang="ts">
+<script module lang="ts">
 	export type IconName =
 		| 'arrow-down-right'
 		| 'arrow-up-right'
@@ -22,8 +22,13 @@
 		| 'sparkles'
 		| 'truck'
 		| 'upload'
+		| 'x'
+		| 'sun'
+		| 'moon'
 		| 'zap';
+</script>
 
+<script lang="ts">
 	interface Props {
 		name: IconName;
 		size?: number;
@@ -130,6 +135,21 @@
 		<path d="M14 17h2" />
 	{:else if name === 'play'}
 		<polygon points="6 3 20 12 6 21 6 3" />
+	{:else if name === 'x'}
+		<path d="M18 6 6 18" />
+		<path d="m6 6 12 12" />
+	{:else if name === 'sun'}
+		<circle cx="12" cy="12" r="4" />
+		<path d="M12 2v2" />
+		<path d="M12 20v2" />
+		<path d="m4.93 4.93 1.41 1.41" />
+		<path d="m17.66 17.66 1.41 1.41" />
+		<path d="M2 12h2" />
+		<path d="M20 12h2" />
+		<path d="m6.34 17.66-1.41 1.41" />
+		<path d="m19.07 4.93-1.41 1.41" />
+	{:else if name === 'moon'}
+		<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
 	{:else if name === 'rotate-ccw'}
 		<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
 		<path d="M3 3v5h5" />
