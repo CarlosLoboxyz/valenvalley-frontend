@@ -13,20 +13,17 @@
 	import PipelineControls from '$lib/components/pipeline/PipelineControls.svelte';
 	import Alert from '$lib/components/ui/Alert.svelte';
 	import { usePreferences } from '$lib/stores/preferences.svelte';
-	import { sourcingStore } from '$lib/stores/sourcing.svelte';
+	import { SourcingStore } from '$lib/stores/sourcing.svelte';
+	import UnavailableScreen from '$lib/components/shell/UnavailableScreen.svelte';
+	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const prefs = usePreferences();
 
-	let hydrated = false;
-	$effect(() => {
-		if (!hydrated && data.initialReport) {
-			sourcingStore.hydrate(data.initialReport);
-			hydrated = true;
-		}
-	});
+	// Un store por página (no un singleton de módulo): en SSR se compartiría entre usuarios.
+	const store = new SourcingStore(untrack(() => (data.status === 'ready' ? data.initialReport : undefined)));
 
 	function scrollToSection(id: string) {
 		requestAnimationFrame(() => {
@@ -35,7 +32,7 @@
 	}
 
 	function handleReviewFlagged() {
-		sourcingStore.focusFlaggedItems();
+		store.focusFlaggedItems();
 		scrollToSection('products');
 	}
 </script>
@@ -45,43 +42,46 @@
 	<meta name="description" content={prefs.t('app.description')} />
 </svelte:head>
 
+{#if data.status === 'ready'}
 <main class="app-shell">
 	<Sidebar
-		activeTab={sourcingStore.activeTab}
-		productCount={sourcingStore.items.length}
-		onSelectTab={(tab) => sourcingStore.setTab(tab)}
+		activeTab={store.activeTab}
+		productCount={store.items.length}
+		userEmail={data.user?.email ?? ''}
+		onSelectTab={(tab) => store.setTab(tab)}
 		onScrollToSection={scrollToSection}
 	/>
 
 	<section class="main-area">
 		<Topbar
-			catalogName={sourcingStore.report.catalogName}
-			itemCount={sourcingStore.items.length}
-			cautionCount={sourcingStore.cautionCount}
+			catalogName={store.report.catalogName}
+			itemCount={store.items.length}
+			cautionCount={store.cautionCount}
 			onReviewFlagged={handleReviewFlagged}
 		/>
 
 		<div class="content" id="overview">
 			<PageHeader
-				activeTab={sourcingStore.activeTab}
-				runDate={sourcingStore.report.runDate}
-				onExportExcel={() => sourcingStore.exportExcel(prefs.locale)}
-				onExportJson={() => sourcingStore.exportJson()}
+				activeTab={store.activeTab}
+				runDate={store.report.runDate}
+				onExportExcel={() => store.exportExcel(prefs.locale)}
+				onExportJson={() => store.exportJson()}
 				onPrint={() => window.print()}
 			/>
 
-			{#if data.reportSource === 'sample'}
-				<Alert tone={data.backendError ? 'error' : 'info'} class="source-alert">
-					{prefs.t(data.backendError ? 'error.backendUnavailable' : 'status.usingSample')}
+			{#if store.noVendorCount > 0}
+				<Alert tone="warn" class="source-alert">
+					{prefs.t('dashboard.noVendors', { count: store.noVendorCount, total: store.items.length })}
+					<a href="/materiales">{prefs.t('dashboard.noVendors.link')}</a>
 				</Alert>
 			{/if}
 
 			<ViewTabs
-				activeTab={sourcingStore.activeTab}
-				onSelectTab={(tab) => sourcingStore.setTab(tab)}
+				activeTab={store.activeTab}
+				onSelectTab={(tab) => store.setTab(tab)}
 			/>
 
-			{#if sourcingStore.activeTab === 'overview'}
+			{#if store.activeTab === 'overview'}
 				<div
 					class="overview-tab-panel"
 					id="overview-view"
@@ -90,75 +90,75 @@
 					tabindex="0"
 				>
 					<StatGrid
-						itemCount={sourcingStore.items.length}
-						familyCount={sourcingStore.report.families.length}
-						cautionCount={sourcingStore.cautionCount}
-						averageScore={sourcingStore.averageScore}
+						itemCount={store.items.length}
+						familyCount={store.report.families.length}
+						cautionCount={store.cautionCount}
+						averageScore={store.averageScore}
 					/>
 
 					<InsightBanner
-						totalCount={sourcingStore.items.length}
-						cautionCount={sourcingStore.cautionCount}
+						totalCount={store.items.length}
+						cautionCount={store.cautionCount}
 						onReviewFlagged={handleReviewFlagged}
 					/>
 
 					<ProductTable
-						items={sourcingStore.paginatedItems}
-						totalFiltered={sourcingStore.filteredItems.length}
-						sourceLabel={sourcingStore.report.sourceLabel}
-						query={sourcingStore.query}
-						scoreFilter={sourcingStore.scoreFilter}
-						familyFilter={sourcingStore.familyFilter}
-						supplierFilter={sourcingStore.supplierFilter}
-						familyCodes={sourcingStore.familyCodes}
-						providers={sourcingStore.providers}
-						currentPage={sourcingStore.currentPage}
-						pageCount={sourcingStore.pageCount}
-						pageSize={sourcingStore.pageSize}
-						expandedRowPos={sourcingStore.expandedRowPos}
+						items={store.paginatedItems}
+						totalFiltered={store.filteredItems.length}
+						sourceLabel={store.report.sourceLabel}
+						query={store.query}
+						scoreFilter={store.scoreFilter}
+						familyFilter={store.familyFilter}
+						supplierFilter={store.supplierFilter}
+						familyCodes={store.familyCodes}
+						providers={store.providers}
+						currentPage={store.currentPage}
+						pageCount={store.pageCount}
+						pageSize={store.pageSize}
+						expandedRowPos={store.expandedRowPos}
 						onQueryChange={(val) => {
-							sourcingStore.query = val;
-							sourcingStore.page = 1;
+							store.query = val;
+							store.page = 1;
 						}}
 						onScoreFilterChange={(val) => {
-							sourcingStore.scoreFilter = val;
-							sourcingStore.page = 1;
+							store.scoreFilter = val;
+							store.page = 1;
 						}}
 						onFamilyFilterChange={(val) => {
-							sourcingStore.familyFilter = val;
-							sourcingStore.page = 1;
+							store.familyFilter = val;
+							store.page = 1;
 						}}
 						onSupplierFilterChange={(val) => {
-							sourcingStore.supplierFilter = val;
-							sourcingStore.page = 1;
+							store.supplierFilter = val;
+							store.page = 1;
 						}}
-						onPageChange={(p) => (sourcingStore.page = p)}
+						onPageChange={(p) => (store.page = p)}
 						onPageSizeChange={(sz) => {
-							sourcingStore.pageSize = sz;
-							sourcingStore.page = 1;
+							store.pageSize = sz;
+							store.page = 1;
 						}}
 						onToggleExpand={(pos) => {
-							sourcingStore.expandedRowPos =
-								sourcingStore.expandedRowPos === pos ? null : pos;
+							store.expandedRowPos =
+								store.expandedRowPos === pos ? null : pos;
 						}}
-						onInspectItem={(item) => (sourcingStore.selectedItem = item)}
+						onInspectItem={(item) => (store.selectedItem = item)}
 					/>
 
 					<div class="lower-grid">
 						<ConsolidationPanel
-							vendors={sourcingStore.report.crossItemVendors}
-							expandedSupplier={sourcingStore.expandedSupplier}
+							vendors={store.report.crossItemVendors}
+							expandedSupplier={store.expandedSupplier}
 							onToggleSupplier={(supplier) => {
-								sourcingStore.expandedSupplier =
-									sourcingStore.expandedSupplier === supplier ? null : supplier;
+								store.expandedSupplier =
+									store.expandedSupplier === supplier ? null : supplier;
 							}}
-							onInspectProduct={(item) => (sourcingStore.selectedItem = item)}
+							onInspectProduct={(item) => (store.selectedItem = item)}
 						/>
 
-						<QualitySignalsPanel signals={sourcingStore.qualitySignals} />
+						<QualitySignalsPanel signals={store.qualitySignals} />
 					</div>
 				</div>
-			{:else if sourcingStore.activeTab === 'graphs'}
+			{:else if store.activeTab === 'graphs'}
 				<div
 					class="graphs-view"
 					id="graphs-view"
@@ -173,13 +173,13 @@
 					</div>
 
 					<DashboardGraphs
-						items={sourcingStore.items}
-						families={sourcingStore.report.families}
-						average={sourcingStore.averageScore}
-						onSelect={(item) => (sourcingStore.selectedItem = item)}
+						items={store.items}
+						families={store.report.families}
+						average={store.averageScore}
+						onSelect={(item) => (store.selectedItem = item)}
 					/>
 				</div>
-			{:else if sourcingStore.activeTab === 'pipeline'}
+			{:else if store.activeTab === 'pipeline'}
 				<div
 					class="graphs-view"
 					id="pipeline-view"
@@ -188,19 +188,17 @@
 					tabindex="0"
 				>
 					<PipelineControls
-						bind:config={sourcingStore.config}
-						disqualifiedCount={sourcingStore.report.disqualified.length}
-						status={sourcingStore.statusMessage}
-						isBusy={sourcingStore.isBusy}
-						onGranularityChange={(g) => sourcingStore.setGranularity(g)}
-						onValidate={() => sourcingStore.validateList()}
+						bind:config={store.config}
+						disqualifiedCount={store.report.disqualified.length}
+						status={store.statusMessage}
+						isBusy={store.isBusy}
+						onGranularityChange={(g) => store.setGranularity(g)}
+						onValidate={() => store.validateList()}
 						onCompare={() => {
-							sourcingStore.setTab('overview');
+							store.setTab('overview');
 							scrollToSection('suppliers');
 						}}
-						onGenerateRfq={() => sourcingStore.generateRfqDraft()}
-						onImportFile={(file) => sourcingStore.importFile(file)}
-						onResetSample={() => sourcingStore.resetToSample()}
+						onGenerateRfq={() => store.generateRfqDraft()}
 					/>
 				</div>
 			{/if}
@@ -213,7 +211,10 @@
 	</section>
 
 	<ProductDetailModal
-		item={sourcingStore.selectedItem}
-		onClose={() => (sourcingStore.selectedItem = null)}
+		item={store.selectedItem}
+		onClose={() => (store.selectedItem = null)}
 	/>
 </main>
+{:else}
+	<UnavailableScreen reason={data.reason} />
+{/if}

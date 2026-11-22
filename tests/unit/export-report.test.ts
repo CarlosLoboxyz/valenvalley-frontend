@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
-import { createInitialSourcingReport } from '$lib/data/sample-report';
+import { createInitialSourcingReport } from '../fixtures/sample-report';
 import { buildRecommendationsWorkbookBuffer } from '$lib/modules/export-report';
 
 function read(locale: 'es-VE' | 'en') {

@@ -210,6 +210,8 @@ export interface FamilyScrapeCache {
 }
 
 export interface SourcingReport {
+	/** Id de la lista (RFQ) del backend que originó este reporte; permite volver a puntuarla. */
+	rfqFileId?: string;
 	runDate: string;
 	sourceLabel: string;
 	catalogName: string;

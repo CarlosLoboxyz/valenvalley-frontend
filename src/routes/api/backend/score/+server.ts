@@ -21,11 +21,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 	}
 
-	let payload: { config?: PipelineConfig; positions?: string | null };
+	let payload: { config?: PipelineConfig; positions?: string | null; rfqFileId?: string };
 	try {
 		payload = await request.json();
 	} catch {
 		return json({ error: { code: 'bad_request', detail: 'JSON body expected' } }, { status: 400 });
+	}
+
+	const rfqFileId = typeof payload.rfqFileId === 'string' ? payload.rfqFileId : '';
+	if (!rfqFileId) {
+		return json({ error: { code: 'bad_request', detail: 'rfqFileId required' } }, { status: 400 });
 	}
 
 	const pipeline = payload.config;
@@ -40,7 +45,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const base = effectiveConfig ? pipelineConfigFromBackend(effectiveConfig) : pipeline;
 
 		const scoreRequest = {
-			rfq_file_id: 'default',
+			rfq_file_id: rfqFileId,
 			granularity: pipeline.granularity,
 			limit: null,
 			positions: payload.positions ?? null,

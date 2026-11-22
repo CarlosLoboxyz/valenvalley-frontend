@@ -1,13 +1,11 @@
 import { DEFAULT_PIPELINE_CONFIG } from '$lib/config/pipeline-config';
-import { createInitialSourcingReport } from '$lib/data/sample-report';
+import { createEmptySourcingReport } from '$lib/domain/empty-report';
 import { hasFlagCode } from '$lib/domain/flags';
-import { MOQ_UNCONFIRMED, SOURCE_LOCAL_VALIDATION, sourceUploaded } from '$lib/domain/labels';
+import { MOQ_UNCONFIRMED } from '$lib/domain/labels';
 import { normalizeReport } from '$lib/domain/report';
 import type { Locale } from '$lib/i18n';
 import { calculateCreditEstimate } from '$lib/modules/cost-estimator';
 import { exportReportAsExcel, exportReportAsJson } from '$lib/modules/export-report';
-import { groupProductsIntoFamilies } from '$lib/modules/family-grouper';
-import { buildSourcingReport, parseRfqWorkbook } from '$lib/modules/rfq-processor';
 import {
 	ALL_FILTER,
 	type DashboardTab,
@@ -28,8 +26,13 @@ class StatusError extends Error {
 }
 
 export class SourcingStore {
-	report = $state<SourcingReport>(createInitialSourcingReport());
+	report = $state<SourcingReport>(createEmptySourcingReport());
 	config = $state<PipelineConfig>(structuredClone(DEFAULT_PIPELINE_CONFIG));
+
+	/** Se crea una instancia por página (nunca un singleton de módulo): en SSR se compartiría entre usuarios. */
+	constructor(initialReport?: SourcingReport) {
+		if (initialReport) this.hydrate(initialReport);
+	}
 
 	// Navigation & Modal state
 	activeTab = $state<DashboardTab>('overview');
@@ -92,6 +95,9 @@ export class SourcingStore {
 			this.currentPage * this.pageSize
 		)
 	);
+
+	/** Posiciones sin ninguna oferta (caché vacía para su familia): hace falta un scrape. */
+	noVendorCount = $derived(this.items.filter((x) => x.vendors === 0).length);
 
 	cautionCount = $derived(
 		this.items.filter((x) => x.tier === 'Caution' || x.tier === 'Disqualified').length
@@ -156,6 +162,11 @@ export class SourcingStore {
 	 * Si el backend no está configurado o falla, se informa el error y NO se inventan datos.
 	 */
 	async validateList() {
+		const rfqFileId = this.report.rfqFileId;
+		if (!rfqFileId) {
+			this.statusMessage = { key: 'error.backendUnavailable' };
+			return;
+		}
 		this.isBusy = true;
 		this.statusMessage = { key: 'status.fetching' };
 		try {
@@ -164,9 +175,14 @@ export class SourcingStore {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					config: structuredClone(this.config),
-					positions: null
+					positions: null,
+					rfqFileId
 				})
 			});
+			if (response.status === 401) {
+				window.location.assign('/login');
+				return;
+			}
 			const data = (await response.json()) as {
 				report?: SourcingReport;
 				error?: { code: string; detail: unknown };
@@ -194,130 +210,12 @@ export class SourcingStore {
 	}
 
 	/**
-	 * Re-ejecuta el agrupado dinámico y la re-puntuación offline de la lista
-	 * de materiales sin costo de scraping.
+	 * Cambia la granularidad del agrupado. El reagrupado real ocurre en el backend al pulsar
+	 * «Validar lista» (puntúa la misma lista con la nueva granularidad, 0 créditos).
 	 */
-	recalculateOffline(regroup = false) {
-		const updated = buildSourcingReport({
-			rfqItems: this.report.rfqItems,
-			cache: this.report.cache,
-			config: structuredClone(this.config),
-			catalogName: this.report.catalogName,
-			sourceLabel: this.config.fromCache ? SOURCE_LOCAL_VALIDATION : this.report.sourceLabel,
-			runDate: this.report.runDate,
-			existingFamilies: regroup ? undefined : this.report.families
-		});
-		this.report = updated;
-		this.page = 1;
-		this.statusMessage = regroup
-			? {
-					key: 'status.regrouped',
-					params: { products: updated.rfqItems.length, families: updated.families.length }
-				}
-			: { key: 'status.validated', params: { count: updated.recommendations.length } };
-	}
-
 	setGranularity(granularity: Granularity) {
 		this.config.granularity = granularity;
-		const { families } = groupProductsIntoFamilies(this.report.rfqItems, granularity);
-		this.report = {
-			...this.report,
-			families,
-			creditEstimate: calculateCreditEstimate({
-				totalProducts: this.report.rfqItems.length,
-				familyCount: families.length,
-				pagesPerFamily: this.config.pagesPerFamily,
-				stealthProxy: this.config.stealthProxy
-			})
-		};
-		this.recalculateOffline(true);
-	}
-
-	async importFile(file: File) {
-		this.isBusy = true;
-		this.statusMessage = null;
-		try {
-			if (file.name.toLowerCase().endsWith('.json')) {
-				const text = await file.text();
-				const parsed = JSON.parse(text) as SourcingReport;
-				if (!Array.isArray(parsed.recommendations)) {
-					throw new StatusError({ key: 'error.import.jsonShape' });
-				}
-				const report = normalizeReport(parsed);
-				this.report = report;
-				if (report.config) this.config = structuredClone(report.config);
-				this.resetFilters();
-				this.statusMessage = {
-					key: 'status.loadedReport',
-					params: { name: file.name, count: report.recommendations.length }
-				};
-			} else {
-				const buffer = await file.arrayBuffer();
-				const rfqItems = parseRfqWorkbook(buffer);
-				if (rfqItems.length === 0) {
-					throw new StatusError({ key: 'error.import.noRows' });
-				}
-				const nextReport = buildSourcingReport({
-					rfqItems,
-					cache: this.report.cache,
-					config: structuredClone(this.config),
-					catalogName: file.name,
-					sourceLabel: sourceUploaded(file.name)
-				});
-				this.report = nextReport;
-				this.resetFilters();
-				this.statusMessage = {
-					key: 'status.parsedRows',
-					params: { rows: rfqItems.length, name: file.name, families: nextReport.families.length }
-				};
-			}
-		} catch (err) {
-			this.statusMessage =
-				err instanceof StatusError ? err.status : { key: 'error.import.failed' };
-		} finally {
-			this.isBusy = false;
-		}
-	}
-
-	async runLiveScrape() {
-		this.isBusy = true;
-		this.statusMessage = { key: 'status.fetching' };
-		try {
-			const res = await fetch('/api/pipeline/scrape', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					rfqItems: this.report.rfqItems,
-					families: this.report.families,
-					config: this.config,
-					cache: this.report.cache
-				})
-			});
-			const data = await res.json();
-			if (!res.ok) {
-				throw data.error
-					? new StatusError({ key: 'status.rawError', params: { message: String(data.error) } })
-					: new StatusError({ key: 'error.fetch.http', params: { status: res.status } });
-			}
-			this.report = normalizeReport(data.report);
-			this.statusMessage = {
-				key: 'status.fetchDone',
-				params: { families: data.familiesScraped }
-			};
-		} catch (err) {
-			this.statusMessage =
-				err instanceof StatusError ? err.status : { key: 'error.fetch.failed' };
-		} finally {
-			this.isBusy = false;
-		}
-	}
-
-	resetToSample() {
-		const initial = createInitialSourcingReport();
-		this.report = initial;
-		this.config = structuredClone(DEFAULT_PIPELINE_CONFIG);
-		this.resetFilters();
-		this.statusMessage = { key: 'status.restored' };
+		this.statusMessage = { key: 'status.granularityChanged' };
 	}
 
 	/**
@@ -340,5 +238,3 @@ export class SourcingStore {
 		exportReportAsExcel(this.report, locale);
 	}
 }
-
-export const sourcingStore = new SourcingStore();

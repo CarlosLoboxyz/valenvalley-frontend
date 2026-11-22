@@ -171,6 +171,8 @@ export interface BackendMeta {
 	filters: Record<string, unknown>;
 	effective_weights?: { vendor: Record<string, number>; blend: Record<string, number> };
 	missing_cache_families?: string[];
+	/** Id de la lista (RFQ) puntuada; permite volver a puntuar la misma lista. */
+	rfq_file_id?: string;
 }
 
 export interface DeliverablePayload {
@@ -192,4 +194,115 @@ export interface ScoreResponse extends DeliverablePayload {
 export interface LatestResponse {
 	exists: boolean;
 	result: DeliverablePayload | null;
+}
+
+// ── Onboarding: listas de materiales, agrupado (0 créditos) y trabajos de scraping ──
+
+/** Una línea de la lista de materiales enviada a `POST /rfq/items`. */
+export interface RfqItemInput {
+	name: string;
+	qty?: number | null;
+	unit?: string | null;
+	position?: number | null;
+	description?: string | null;
+	min_price?: number | null;
+	max_price?: number | null;
+	brand?: string | null;
+	technical_specs?: string | null;
+}
+
+export interface RfqPreviewRow {
+	position: number;
+	name: string;
+	qty: number | null;
+	unit: string | null;
+	min_price: number | null;
+	max_price: number | null;
+	brand: string | null;
+}
+
+export interface RfqCreated {
+	upload_id: string;
+	filename: string;
+	row_count: number;
+	sheets: string[];
+	sheet: string;
+	warnings: string[];
+	preview: RfqPreviewRow[];
+}
+
+export interface GroupFamilyPayload {
+	family_id: string;
+	family_name: string;
+	search_query: string;
+	cohesion_score: number;
+	item_count: number;
+	positions: number[];
+	is_cached: boolean;
+	cached_listing_count: number;
+}
+
+export interface GroupResponse {
+	total_items: number;
+	family_count: number;
+	api_reduction_pct: number;
+	cached_families: number;
+	uncached_families: number;
+	pages: number;
+	stealth: boolean;
+	estimated_credits_premium: number;
+	estimated_credits_stealth: number;
+	estimated_credits_selected: number;
+	granularity: string;
+	families: GroupFamilyPayload[];
+	warnings: string[];
+}
+
+export type JobState = 'queued' | 'running' | 'completed' | 'cancelled' | 'failed';
+
+export interface ProjectedBudget {
+	total_families: number;
+	cached_families: number;
+	families_to_scrape: number;
+	pages: number;
+	stealth: boolean;
+	rate_per_page: number;
+	estimated_credits: number;
+}
+
+export interface JobCreated {
+	job_id: string;
+	status: JobState;
+	projected_budget: ProjectedBudget;
+}
+
+export interface JobFamilyLog {
+	family_id: string;
+	search_query: string;
+	status: string;
+	listing_count: number;
+	credits: number;
+	warnings: string[];
+	error: string | null;
+}
+
+export interface JobStatus {
+	job_id: string;
+	/** Lista que scrapea este trabajo y granularidad usada; permiten puntuar tras un refresh. */
+	rfq_file_id: string | null;
+	granularity: string | null;
+	status: JobState;
+	progress: {
+		completed_families: number;
+		total_families: number;
+		cache_hits: number;
+		live_fetches: number;
+	};
+	credits_spent: number;
+	projected_budget: ProjectedBudget;
+	family_logs: JobFamilyLog[];
+	warnings: string[];
+	error: string | null;
+	created_at: string;
+	finished_at: string | null;
 }

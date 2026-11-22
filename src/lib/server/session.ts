@@ -108,7 +108,7 @@ export function isPublicPath(pathname: string): boolean {
 }
 
 /** Sólo rutas internas relativas (evita open-redirect vía `redirectTo`). */
-export function safeRedirect(target: string | null | undefined, fallback = '/materiales'): string {
+export function safeRedirect(target: string | null | undefined, fallback = '/'): string {
 	if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) {
 		return fallback;
 	}

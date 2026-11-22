@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialSourcingReport } from '$lib/data/sample-report';
+import { createInitialSourcingReport } from '../fixtures/sample-report';
 import { flag, hasFlagCode, normalizeFlags } from '$lib/domain/flags';
 import { normalizeReport } from '$lib/domain/report';
 import { evaluateVendorsForGroup } from '$lib/modules/vendor-recommender';

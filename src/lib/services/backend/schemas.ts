@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import type {
-	PublicConfig,
-	ScoreResponse,
+	GroupResponse,
+	HealthResponse,
+	JobCreated,
+	JobStatus,
 	LatestResponse,
-	HealthResponse
+	PublicConfig,
+	RfqCreated,
+	ScoreResponse
 } from './types';
 
 /*
@@ -122,7 +126,8 @@ const metaSchema = z.object({
 	top_n: z.number().catch(5),
 	credits_spent: z.number().catch(0),
 	generated_at: z.string().catch(''),
-	filters: z.record(z.string(), z.unknown()).catch({})
+	filters: z.record(z.string(), z.unknown()).catch({}),
+	rfq_file_id: z.string().optional().catch(undefined)
 });
 
 const dashboardSchema = z.object({
@@ -213,7 +218,12 @@ export const publicConfigSchema = z.object({
 	max_products_per_page: z.number().catch(15),
 	recommend_top_n: z.number().catch(5),
 	max_upload_mb: z.number().catch(20),
-	require_verified_email: z.boolean().catch(true)
+	require_verified_email: z.boolean().catch(true),
+	credit_rates: z
+		.object({ premium_per_page: z.number().catch(30), stealth_per_page: z.number().catch(80) })
+		.catch({ premium_per_page: 30, stealth_per_page: 80 }),
+	max_credits_per_job: z.number().nullable().catch(null),
+	max_credits_per_day: z.number().nullable().catch(null)
 });
 
 export function parseScoreResponse(data: unknown): ScoreResponse {
@@ -241,4 +251,129 @@ export function parseBackendError(data: unknown): { code: string; detail: unknow
 		.catch({ code: 'backend_error', detail: undefined })
 		.parse(data);
 	return { code: parsed.code, detail: parsed.detail };
+}
+
+// ── Onboarding ──
+
+const budgetSchema = z.object({
+	total_families: z.number().catch(0),
+	cached_families: z.number().catch(0),
+	families_to_scrape: z.number().catch(0),
+	pages: z.number().catch(1),
+	stealth: z.boolean().catch(false),
+	rate_per_page: z.number().catch(30),
+	estimated_credits: z.number().catch(0)
+});
+
+export const rfqCreatedSchema = z.object({
+	upload_id: z.string(),
+	filename: str,
+	row_count: z.number().catch(0),
+	sheets: z.array(z.string()).catch([]),
+	sheet: str,
+	warnings: z.array(z.string()).catch([]),
+	preview: z
+		.array(
+			z.object({
+				position: z.number().catch(0),
+				name: str,
+				qty: nullableNum,
+				unit: z.string().nullable().catch(null),
+				min_price: nullableNum,
+				max_price: nullableNum,
+				brand: z.string().nullable().catch(null)
+			})
+		)
+		.catch([])
+});
+
+export const groupResponseSchema = z.object({
+	total_items: z.number().catch(0),
+	family_count: z.number().catch(0),
+	api_reduction_pct: z.number().catch(0),
+	cached_families: z.number().catch(0),
+	uncached_families: z.number().catch(0),
+	pages: z.number().catch(1),
+	stealth: z.boolean().catch(false),
+	estimated_credits_premium: z.number().catch(0),
+	estimated_credits_stealth: z.number().catch(0),
+	estimated_credits_selected: z.number().catch(0),
+	granularity: str,
+	families: z
+		.array(
+			z.object({
+				family_id: str,
+				family_name: str,
+				search_query: str,
+				cohesion_score: z.number().catch(0),
+				item_count: z.number().catch(0),
+				positions: z.array(z.number()).catch([]),
+				is_cached: z.boolean().catch(false),
+				cached_listing_count: z.number().catch(0)
+			})
+		)
+		.catch([]),
+	warnings: z.array(z.string()).catch([])
+});
+
+const jobStateSchema = z.enum(['queued', 'running', 'completed', 'cancelled', 'failed']);
+
+export const jobCreatedSchema = z.object({
+	job_id: z.string(),
+	status: jobStateSchema.catch('queued'),
+	projected_budget: budgetSchema
+});
+
+export const jobStatusSchema = z.object({
+	job_id: z.string(),
+	rfq_file_id: z.string().nullable().catch(null),
+	granularity: z.string().nullable().catch(null),
+	status: jobStateSchema.catch('failed'),
+	progress: z
+		.object({
+			completed_families: z.number().catch(0),
+			total_families: z.number().catch(0),
+			cache_hits: z.number().catch(0),
+			live_fetches: z.number().catch(0)
+		})
+		.catch({ completed_families: 0, total_families: 0, cache_hits: 0, live_fetches: 0 }),
+	credits_spent: z.number().catch(0),
+	projected_budget: budgetSchema,
+	family_logs: z
+		.array(
+			z.object({
+				family_id: str,
+				search_query: str,
+				status: str,
+				listing_count: z.number().catch(0),
+				credits: z.number().catch(0),
+				warnings: z.array(z.string()).catch([]),
+				error: z.string().nullable().catch(null)
+			})
+		)
+		.catch([]),
+	warnings: z.array(z.string()).catch([]),
+	error: z.string().nullable().catch(null),
+	created_at: str,
+	finished_at: z.string().nullable().catch(null)
+});
+
+export function parseRfqCreated(data: unknown): RfqCreated {
+	return rfqCreatedSchema.parse(data) as RfqCreated;
+}
+
+export function parseGroupResponse(data: unknown): GroupResponse {
+	return groupResponseSchema.parse(data) as GroupResponse;
+}
+
+export function parseJobCreated(data: unknown): JobCreated {
+	return jobCreatedSchema.parse(data) as JobCreated;
+}
+
+export function parseJobStatus(data: unknown): JobStatus {
+	return jobStatusSchema.parse(data) as JobStatus;
+}
+
+export function parseActiveJob(data: unknown): JobStatus | null {
+	return data === null || data === undefined ? null : parseJobStatus(data);
 }

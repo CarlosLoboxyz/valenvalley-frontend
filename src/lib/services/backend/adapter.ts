@@ -282,6 +282,7 @@ export function adaptScoreResponse(
 		runDate: meta.generated_at,
 		sourceLabel: SOURCE_CONSOLIDATED,
 		catalogName: meta.source_excel,
+		rfqFileId: meta.rfq_file_id || undefined,
 		config,
 		rfqItems,
 		families,

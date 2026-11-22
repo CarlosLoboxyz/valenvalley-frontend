@@ -28,6 +28,14 @@ The browser never talks to PocketBase or FastAPI directly. For local development
 running PocketBase (`POCKETBASE_URL`) and, to see real data, the backend (`BACKEND_URL`); the
 easiest way is the monorepo `docker-compose.yml`.
 
+## Onboarding flow
+
+`/` shows the user's latest backend analysis; users without one are redirected to `/materiales`, a 4-step flow
+(list → review families and credit estimate → search with progress → results). There is no sample data: if the
+backend is down or `BACKEND_URL` is empty an explicit "service unavailable" screen is shown. The flow talks to
+the backend only through the server proxies in `src/routes/api/backend/*`. Spending credits requires the
+explicit confirmation on the review step.
+
 ## Docker
 
 `Dockerfile` builds a standalone Node server (`@sveltejs/adapter-node`, port 3000). Configuration

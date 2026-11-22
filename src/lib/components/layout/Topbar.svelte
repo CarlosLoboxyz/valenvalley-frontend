@@ -25,6 +25,7 @@
 		<b>{catalogName}</b>
 	</div>
 	<div class="topbar-actions">
+		<a class="topbar-new" href="/materiales">{t('nav.newList')}</a>
 		<LocaleSwitcher tone="chrome" />
 		<ThemeToggle tone="chrome" />
 		<span class="mode-badge">{tn('topbar.summary', itemCount, { review: cautionCount })}</span>

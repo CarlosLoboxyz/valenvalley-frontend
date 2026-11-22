@@ -9,11 +9,17 @@
 	interface Props {
 		activeTab: DashboardTab;
 		productCount: number;
+		/** Correo del usuario en sesión (perfil). */
+		userEmail: string;
 		onSelectTab: (tab: DashboardTab) => void;
 		onScrollToSection: (id: string) => void;
 	}
 
-	let { activeTab, productCount, onSelectTab, onScrollToSection }: Props = $props();
+	let { activeTab, productCount, userEmail, onSelectTab, onScrollToSection }: Props = $props();
+
+	const initials = $derived(
+		(userEmail.split('@')[0] ?? '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || '?'
+	);
 
 	const { t } = usePreferences();
 
@@ -54,6 +60,10 @@
 
 	<div class="workspace-label">{t('nav.workspace')}</div>
 	<nav class="nav" aria-label={t('nav.aria')}>
+		<a class="nav-item nav-item--primary" href="/materiales">
+			<Icon name="upload" size={17} />
+			{t('nav.newList')}
+		</a>
 		{#each items as item (item.label)}
 			<button
 				type="button"
@@ -80,9 +90,9 @@
 			</button>
 		</div>
 		<div class="profile">
-			<div class="avatar">JD</div>
+			<div class="avatar">{initials}</div>
 			<div>
-				<b>Jordan Davis</b>
+				<b title={userEmail}>{userEmail}</b>
 				<small>{t('profile.role')}</small>
 			</div>
 			<IconButton

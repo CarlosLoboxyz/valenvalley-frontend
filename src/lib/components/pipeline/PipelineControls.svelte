@@ -16,8 +16,6 @@
 		onValidate: () => void;
 		onCompare: () => void;
 		onGenerateRfq: () => void;
-		onImportFile: (file: File) => void;
-		onResetSample: () => void;
 	}
 
 	let {
@@ -28,25 +26,12 @@
 		onGranularityChange,
 		onValidate,
 		onCompare,
-		onGenerateRfq,
-		onImportFile,
-		onResetSample
+		onGenerateRfq
 	}: Props = $props();
 
 	const { t, tn } = usePreferences();
 
-	let fileInput: HTMLInputElement | undefined = $state();
-
 	const certsInput = $derived(config.filters.requiredCerts.join(', '));
-
-	function handleFileInput(e: Event) {
-		const input = e.currentTarget as HTMLInputElement;
-		const file = input.files?.[0];
-		if (file) {
-			onImportFile(file);
-			input.value = '';
-		}
-	}
 
 	function handleCertsChange(raw: string) {
 		config.filters.requiredCerts = raw
@@ -69,21 +54,13 @@
 		<div class="control-group">
 			<div class="control-row">
 				<div>
-					<label for="rfq-upload">{t('pipeline.import.label')}</label>
+					<span class="control-label">{t('pipeline.import.label')}</span>
 					<small>{t('pipeline.import.hint')}</small>
 				</div>
-				<Button variant="secondary" onclick={() => fileInput?.click()}>
+				<Button variant="secondary" href="/materiales">
 					<Icon name="upload" size={14} />
 					{t('pipeline.import.button')}
 				</Button>
-				<input
-					id="rfq-upload"
-					bind:this={fileInput}
-					type="file"
-					accept=".xlsx,.xls,.csv,.json"
-					class="sr-only"
-					onchange={handleFileInput}
-				/>
 			</div>
 
 			<div class="control-row">
@@ -132,10 +109,6 @@
 			<Button variant="secondary" onclick={onGenerateRfq} disabled={isBusy}>
 				<Icon name="file-spreadsheet" size={14} />
 				{t('pipeline.rfq')}
-			</Button>
-			<Button variant="ghost" onclick={onResetSample} disabled={isBusy}>
-				<Icon name="rotate-ccw" size={14} />
-				{t('pipeline.reset')}
 			</Button>
 		</div>
 

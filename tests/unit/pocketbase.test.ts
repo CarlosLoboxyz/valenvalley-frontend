@@ -133,11 +133,11 @@ describe('tokenExpiry', () => {
 describe('session helpers', () => {
 	it('sólo permite redirecciones internas', () => {
 		expect(safeRedirect('/materiales?x=1')).toBe('/materiales?x=1');
-		expect(safeRedirect('//evil.com')).toBe('/materiales');
-		expect(safeRedirect('https://evil.com')).toBe('/materiales');
-		expect(safeRedirect('/\\evil.com')).toBe('/materiales');
-		expect(safeRedirect(null)).toBe('/materiales');
-		expect(safeRedirect(undefined, '/')).toBe('/');
+		expect(safeRedirect('//evil.com')).toBe('/');
+		expect(safeRedirect('https://evil.com')).toBe('/');
+		expect(safeRedirect('/\\evil.com')).toBe('/');
+		expect(safeRedirect(null)).toBe('/');
+		expect(safeRedirect(undefined, '/x')).toBe('/x');
 	});
 
 	it('define las rutas públicas', () => {

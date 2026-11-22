@@ -25,7 +25,12 @@
 		processing = true;
 		try {
 			const result = parseMaterialsData(await file.arrayBuffer());
-			onParsed({ fileName: file.name, validCount: result.valid.length, errors: result.errors });
+			onParsed({
+				fileName: file.name,
+				validCount: result.valid.length,
+				errors: result.errors,
+				rows: result.valid
+			});
 		} catch {
 			error = t('ingest.readFailed');
 		} finally {
