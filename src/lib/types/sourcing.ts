@@ -108,9 +108,37 @@ export interface RecommendationItem {
 	disqualifiedCount: number;
 	listingUrl: string;
 	moqLabel: string;
+	/** MOQ numérico cuando se conoce (en la unidad de la oferta); `null` si no está confirmado. */
+	moqNumeric: number | null;
 	yearsActive: number | null;
 	hasTradeAssurance: boolean;
 	certifications: string[];
+	/** Precio unitario de la oferta ganadora en USD, para calcular la cotización. */
+	unitPriceMinUsd: number | null;
+	unitPriceMaxUsd: number | null;
+	/** Escalas de precio por cantidad (si el backend las envía). Se priorizan sobre el rango. */
+	priceTiers: PriceTier[] | null;
+	/** Estimado de carga para la cantidad pedida, en m³. `null` si el backend no lo envía. */
+	cargoVolumeM3: number | null;
+	/** Volumen por unidad, en m³ (alternativa al total; se usa `cargoVolumeM3` si ambos vienen). */
+	unitVolumeM3: number | null;
+	/** Peso de la carga para la cantidad pedida, en kg (opcional). */
+	cargoWeightKg: number | null;
+	/** ¿El volumen/peso incluyen embalaje? `null` = no informado. */
+	includesPackaging: boolean | null;
+	/** Dato ilustrativo de la demo: se muestra como «Muestra», nunca como cotización real. */
+	isSample: boolean;
+}
+
+/**
+ * Tramo de precio por cantidad. `unit_price_usd` en USD. Con `maxQty === null`
+ * el tramo está abierto hacia arriba; la cantidad pedida cae en el tramo cuyo
+ * rango la contiene.
+ */
+export interface PriceTier {
+	min_qty: number;
+	max_qty: number | null;
+	unit_price_usd: number;
 }
 
 export interface CrossItemVendor {

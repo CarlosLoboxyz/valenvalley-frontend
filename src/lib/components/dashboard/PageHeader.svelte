@@ -15,7 +15,7 @@
 
 	let { activeTab, runDate, onExportExcel, onExportJson, onPrint }: Props = $props();
 
-	const { t, locale, date } = usePreferences();
+	const { t, date } = usePreferences();
 
 	const titles = {
 		overview: 'header.title.overview',

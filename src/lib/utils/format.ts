@@ -4,20 +4,10 @@ export function padPosition(pos: number): string {
 	return String(pos).padStart(2, '0');
 }
 
-export function formatScore(score: number): string {
-	return Number.isFinite(score) ? score.toFixed(1) : '0.0';
-}
-
 export function classifyTier(score: number): RecommendationTier {
 	if (score >= 75) return 'Strong Recommend';
 	if (score >= 55) return 'Consider';
 	return 'Caution';
-}
-
-export function tierClass(tier: RecommendationTier): 'strong' | 'consider' | 'caution' {
-	if (tier === 'Strong Recommend') return 'strong';
-	if (tier === 'Consider') return 'consider';
-	return 'caution';
 }
 
 /** Tono de Badge para un nivel de recomendación. */
@@ -58,39 +48,4 @@ export function formatBudgetRange(min: number | null, max: number | null): strin
 	if (max !== null) return `≤ $${max.toFixed(2)}`;
 	if (min !== null) return `≥ $${min.toFixed(2)}`;
 	return 'Not specified';
-}
-
-export function buildCliCommandPreview(params: {
-	catalogName: string;
-	limit?: number;
-	pages: number;
-	stealth: boolean;
-	fromCache: boolean;
-	dryRun: boolean;
-	granularity: string;
-	topN: number;
-	requireTradeAssurance: boolean;
-	minYears: number;
-	strictMoq: boolean;
-	strictCerts: boolean;
-}): string {
-	const parts = [`python main.py ${params.catalogName || 'products.xlsx'}`];
-	if (params.limit) parts.push(`--limit ${params.limit}`);
-	if (params.granularity !== 'balanced') parts.push(`--granularity ${params.granularity}`);
-	if (params.dryRun) {
-		parts.push('--dry-run');
-		return parts.join(' ');
-	}
-	if (params.fromCache) {
-		parts.push('--from-cache');
-	} else {
-		parts.push(`-p ${params.pages}`);
-		parts.push(params.stealth ? '--stealth' : '--no-stealth');
-	}
-	if (params.requireTradeAssurance) parts.push('--require-trade-assurance');
-	if (params.minYears > 0) parts.push(`--min-years ${params.minYears}`);
-	if (params.strictMoq) parts.push('--strict-moq');
-	if (params.strictCerts) parts.push('--strict-certs');
-	parts.push(`--top ${params.topN}`);
-	return parts.join(' ');
 }

@@ -152,6 +152,48 @@ export class SourcingStore {
 	}
 
 	/**
+	 * Valida/recalcula usando el backend FastAPI (0 créditos) vía el proxy de SvelteKit.
+	 * Si el backend no está configurado o falla, se informa el error y NO se inventan datos.
+	 */
+	async validateList() {
+		this.isBusy = true;
+		this.statusMessage = { key: 'status.fetching' };
+		try {
+			const response = await fetch('/api/backend/score', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					config: structuredClone(this.config),
+					positions: null
+				})
+			});
+			const data = (await response.json()) as {
+				report?: SourcingReport;
+				error?: { code: string; detail: unknown };
+			};
+			if (!response.ok || data.error) {
+				throw new StatusError({
+					key: 'status.rawError',
+					params: { message: String(data.error?.detail ?? 'backend') }
+				});
+			}
+			if (!data.report) throw new StatusError({ key: 'error.backendUnavailable' });
+			this.report = normalizeReport(data.report);
+			this.config = structuredClone(data.report.config);
+			this.resetFilters();
+			this.statusMessage = {
+				key: 'status.validated',
+				params: { count: this.report.recommendations.length }
+			};
+		} catch (err) {
+			this.statusMessage =
+				err instanceof StatusError ? err.status : { key: 'error.backendUnavailable' };
+		} finally {
+			this.isBusy = false;
+		}
+	}
+
+	/**
 	 * Re-ejecuta el agrupado dinámico y la re-puntuación offline de la lista
 	 * de materiales sin costo de scraping.
 	 */
